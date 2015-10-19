@@ -1,0 +1,14 @@
+.project
+.classpath
+bin
+.cache
+.idea
+.worksheet
+out
+src/META-INF
+graphx_minCutFlooding.iml
+run
+target
+.cache-main
+.settings
+lib/spark-assembly-1.5.0-hadoop2.4.0.jar
