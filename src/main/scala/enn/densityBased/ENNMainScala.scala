@@ -39,8 +39,8 @@ object ENNMainScala
                 				)
                 				
         
-//        val ennGraphOutput = ennLoader.printer._lastPrintedOutput
-//        crackerDensityN.CrackerAllComparable.mainGO(ennGraphOutput, args_)
+        val ennGraphOutput = "test"
+        crackerDensity.CrackerAllComparable.mainGO(ennGraphOutput, args_)
                                 
     }
 }

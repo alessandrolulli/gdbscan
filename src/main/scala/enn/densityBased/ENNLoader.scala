@@ -13,6 +13,9 @@ import util.CCPropertiesImmutable
 import util.CCUtil
 import info.debatty.java.stringsimilarity.JaroWinkler
 import knn.graph.NodeGeneric
+import knn.metric.JaccardSimilaritySetLong
+import knn.graph.IMetric
+import java.util.HashSet
 
 /**
  * @author alemare
@@ -53,6 +56,18 @@ class ENNLoader( args_ : Array[String] ) extends Serializable
                     
                     ennRunner.run(metric, vertexRDD.map(t => nodeManager.createNode(t._1.toLong, t._2)))
                 }
+                case "Transaction" =>
+                {
+                    val vertexRDD = loadTransactionData( file , config.property)
+                    val metric : IMetric[Long, java.util.Set[Int], NodeGeneric[Long, java.util.Set[Int]]] = 
+                      new JaccardSimilaritySetLong[Long, Int, java.util.Set[Int], NodeGeneric[Long, java.util.Set[Int]]]
+                    val nodeManager = new ENNNodeManagerValueOnNodeLong[java.util.Set[Int]](sc)
+                    nodeManager.init(vertexRDD)
+                    
+                    val ennRunner = getENNRunnerLongID[java.util.Set[Int], NodeGeneric[Long, java.util.Set[Int]]](nodeManager)
+                    
+                    ennRunner.run(metric, vertexRDD.map(t => nodeManager.createNode(t._1, t._2)))
+                }
             }
         
         sc.stop
@@ -61,6 +76,29 @@ class ENNLoader( args_ : Array[String] ) extends Serializable
     def getENNRunnerLongID[T : ClassTag, TN <: INode[Long, T] : ClassTag](nodeManager : ENNNodeManager[Long, T, TN]) =
     {
         new ENNRunnerLongID[T, TN](printer, config, nodeManager, sc)
+    }
+    
+    def loadTransactionData( data : RDD[String], property : CCPropertiesImmutable ) : RDD[( Long, java.util.Set[Int] )] =
+    {
+        val toReturnEdgeList : RDD[( Long, java.util.Set[Int] )] = data.map( line =>
+            {
+                val splitted = line.split( ";" )
+//                val splitted = line.split( property.separator )
+                if ( splitted.size >= 2 ) {
+                    try {
+                        val set : java.util.Set[Int] = new java.util.HashSet
+                        val elSet = splitted(2).split(" ").map(_.toInt).toSet
+                        set.addAll(elSet)
+                        ( splitted( 0 ).toLong, set )
+                    } catch {
+                        case e : Exception => ( -1L, new HashSet() )
+                    }
+                } else {
+                    ( -1L, new HashSet() )
+                }
+            } )
+
+        toReturnEdgeList.filter( t => !t._2.isEmpty )
     }
 
     def loadPoint2D( data : RDD[String], property : CCPropertiesImmutable ) : RDD[( String, Point2D )] =
