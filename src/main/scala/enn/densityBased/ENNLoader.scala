@@ -5,17 +5,17 @@ import scala.reflect.ClassTag
 import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.rdd.RDD
 import knn.graph.INode
-import knn.graph.NodeSimple
-import knn.metric.EuclidianDistance2D
 import knn.util.Point2D
 import util.CCProperties
 import util.CCPropertiesImmutable
 import util.CCUtil
-import info.debatty.java.stringsimilarity.JaroWinkler
-import knn.graph.NodeGeneric
-import knn.metric.JaccardSimilaritySetLong
-import knn.graph.IMetric
 import java.util.HashSet
+import knn.metric.IMetric
+import knn.graph.impl.NodeGeneric
+import knn.metric.impl.JaroWinkler
+import knn.metric.impl.EuclidianDistance2D
+import knn.metric.impl.JaccardSimilaritySet
+import knn.graph.impl.NodeSimple
 
 /**
  * @author alemare
@@ -60,7 +60,7 @@ class ENNLoader( args_ : Array[String] ) extends Serializable
                 {
                     val vertexRDD = loadTransactionData( file , config.property)
                     val metric : IMetric[Long, java.util.Set[Int], NodeGeneric[Long, java.util.Set[Int]]] = 
-                      new JaccardSimilaritySetLong[Long, Int, java.util.Set[Int], NodeGeneric[Long, java.util.Set[Int]]]
+                      new JaccardSimilaritySet[Long, Int, java.util.Set[Int], NodeGeneric[Long, java.util.Set[Int]]]
                     val nodeManager = new ENNNodeManagerValueOnNodeLong[java.util.Set[Int]](sc)
                     nodeManager.init(vertexRDD)
                     

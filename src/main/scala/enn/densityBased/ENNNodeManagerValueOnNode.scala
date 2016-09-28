@@ -1,12 +1,11 @@
 package enn.densityBased
 
-import java.util.HashSet
 import scala.reflect.ClassTag
+
 import org.apache.spark.SparkContext
-import knn.graph.INode
-import knn.graph.Node
 import org.apache.spark.rdd.RDD
-import knn.graph.NodeGeneric
+
+import knn.graph.impl.NodeGeneric
 
 abstract class ENNNodeManagerValueOnNode[TID : ClassTag, T : ClassTag]
     (@transient val sc : SparkContext) 

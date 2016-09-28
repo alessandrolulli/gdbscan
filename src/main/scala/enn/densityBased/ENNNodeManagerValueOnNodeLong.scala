@@ -1,16 +1,18 @@
 package enn.densityBased
 
+import java.util.Random
+
+import scala.collection.JavaConversions._
 import scala.reflect.ClassTag
+
 import org.apache.spark.SparkContext
 import org.apache.spark.SparkContext._
 import org.apache.spark.rdd.RDD
-import knn.graph.IMetric
-import knn.graph.NodeGeneric
+
 import knn.graph.Neighbor
 import knn.graph.NeighborList
-import knn.graph.NodeSimple
-import java.util.Random
-import scala.collection.JavaConversions._
+import knn.graph.impl.NodeGeneric
+import knn.metric.IMetric
 
 class ENNNodeManagerValueOnNodeLong[T : ClassTag](@transient val scHere : SparkContext)  extends ENNNodeManagerValueOnNode[Long, T](scHere) 
 {

@@ -1,11 +1,11 @@
 package enn.densityBased
 
-import scala.reflect.ClassTag
-import org.apache.spark.SparkContext
-import knn.graph.INode
-import knn.graph.NodeSimple
 import scala.collection.mutable.Map
+import scala.reflect.ClassTag
+
+import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
+import knn.graph.impl.NodeSimple
 
 abstract class ENNNodeManagerValueOnMap[TID : ClassTag, T : ClassTag]
     (@transient val sc : SparkContext) 
@@ -27,7 +27,7 @@ abstract class ENNNodeManagerValueOnMap[TID : ClassTag, T : ClassTag]
         new NodeSimple(nodeId)
     }
     
-    def createNode(nodeId : TID) : NodeSimple[TID, T] = 
+    def createNode(nodeId : TID) : NodeSimple[TID, T] =  
     {
         new NodeSimple(nodeId)
     }

@@ -1,17 +1,10 @@
 package enn.densityBased
 
-import org.apache.spark.api.java.JavaPairRDD
-import util.CCUtil
-import info.debatty.java.stringsimilarity.JaroWinkler
-import util.CCProperties
-import knn.graph.Node
-import org.apache.spark.rdd.RDD
-import knn.util.Point2D
-import util.CCPropertiesImmutable
-import knn.metric.EuclidianDistance2D
-import knn.graph.INode
-import knn.graph.IMetric
 import scala.collection.JavaConversions._
+
+import util.CCProperties
+import util.CCPropertiesImmutable
+import util.CCUtil
 
 /**
  * @author alemare
@@ -29,7 +22,7 @@ class ENNConfig( args_ : Array[String], appName : String = "ENN" ) extends Seria
     val maxIterations = propertyLoad.getInt( "maxIterations", 5 );
     val maxComputingNodes = propertyLoad.getInt( "maxComputingNodes", 500000 );
     val randomRestart = propertyLoad.getInt( "randomRestart", 5 );
-    val printStep = propertyLoad.getInt( "printStep", 2 );
+    val printStep = propertyLoad.getInt( "printStep", 1 );
 
     val knnSkip = propertyLoad.getBoolean( "knnSkip", false );
     val clusterSkip = propertyLoad.getBoolean( "clusterSkip", false );
@@ -48,9 +41,10 @@ class ENNConfig( args_ : Array[String], appName : String = "ENN" ) extends Seria
     val excludeNode = propertyLoad.getBoolean( "excludeNode", false );
     val filterSparse = propertyLoad.getBoolean( "filterSparse", false );
 
-    val performance = propertyLoad.getBoolean( "performance", false );
+    val performance = propertyLoad.getBoolean( "performance", true );
     val messageStat = propertyLoad.getBoolean( "messageStat", false );
     val endIterationValue = if (performance) -1 else -2
+    val knnMetricDoubleCalculation = propertyLoad.getBoolean( "knnMetricDoubleCalculation", true );
 
     val epsilonStart = propertyLoad.getInt( "epsilonStart", 0 );
     val epsilonEnd = propertyLoad.getInt( "epsilonEnd", 10 );

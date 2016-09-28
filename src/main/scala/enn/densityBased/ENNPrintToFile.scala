@@ -1,13 +1,13 @@
 package enn.densityBased
 
-import org.apache.spark.api.java.JavaPairRDD
 import java.util.HashSet
-import knn.graph.Node
-import util.CCPropertiesImmutable
-import org.apache.spark.SparkContext
-import scala.collection.JavaConversions._
-import knn.graph.INode
+
+import scala.collection.JavaConversions.asScalaSet
+import scala.collection.JavaConversions.collectionAsScalaIterable
+
 import org.apache.spark.rdd.RDD
+
+import knn.graph.INode
 import knn.graph.NeighborList
 
 
@@ -53,26 +53,25 @@ class ENNPrintToFile(config : ENNConfig) extends Serializable
         toPrint.saveAsTextFile(config.property.outputFile)
     }
 
-    def printTime(iteration : Int, time : Long, totalNode : Long, computingNodes : Double, stoppedNodes : Double, messageNumber : Long, numberOfComparison : Long)
+    def printTime(iteration : Int, time : Long, totalNode : Long, computingNodes : Double, stoppedNodes : Double, messageNumber : Long)
     {
         _time = _time + time
         val timeToPrint = _time
 
-//        config.util.io.printStatENN(
-//                                iteration,
-//                                timeToPrint,
-//                                config.k,
-//                                config.kMax,
-//                                config.epsilon,
-//                                config.randomRestart,
-//                                config.printStep,
-//                                totalNode,
-//                                computingNodes,
-//                                stoppedNodes,
-//                                config.performance,
-//                                messageNumber,
-//                                numberOfComparison,
-//                                config
-//                                )
+        config.util.io.printStatENN(
+                                iteration,
+                                timeToPrint,
+                                config.k,
+                                config.kMax,
+                                config.epsilon,
+                                config.randomRestart,
+                                config.printStep,
+                                totalNode,
+                                computingNodes,
+                                stoppedNodes,
+                                config.performance,
+                                messageNumber,
+                                config
+                                )
     }
 }

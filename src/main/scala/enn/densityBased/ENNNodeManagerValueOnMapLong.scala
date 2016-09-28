@@ -3,11 +3,11 @@ package enn.densityBased
 import scala.reflect.ClassTag
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
-import knn.graph.NodeSimple
 import knn.graph.NeighborList
 import java.util.Random
-import knn.graph.IMetric
 import knn.graph.Neighbor
+import knn.metric.IMetric
+import knn.graph.impl.NodeSimple
 
 class ENNNodeManagerValueOnMapLong[T : ClassTag](@transient val scHere : SparkContext)  extends ENNNodeManagerValueOnMap[Long, T](scHere){
   

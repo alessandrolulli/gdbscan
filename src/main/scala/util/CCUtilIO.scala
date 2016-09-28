@@ -8,6 +8,7 @@ import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
 
 import com.google.common.base.Joiner
+import enn.densityBased.ENNConfig
 
 class CCUtilIO(property: CCPropertiesImmutable) extends Serializable {
   val fileStatDescription = "algorithmName,dataset,partition,step,timeAll,timeLoadingAndComputation,timeComputation,reduceInputMessageNumber,reduceInputSize,ccNumber,ccNumberNoIsolatedVertices,ccMaxSize,customColumn,cores,switchLocal,shuffleManager,compressionCodec,bitmaskCustom,sparkShuffleConsolidateFiles,edgeThreshold"
@@ -136,34 +137,6 @@ class CCUtilIO(property: CCPropertiesImmutable) extends Serializable {
       printFile.close
     }
 
-  def printStatNNCTPH(
-    timaAll: Long,
-    k: Int,
-    buckets: Int,
-    stages: Int) =
-    {
-      val printFile = new FileWriter("stats.txt", true)
-      val joiner = Joiner.on(",")
-
-      val desc = "algorithmName,dataset,partition,timeAll,customColumn,cores,shuffleManager,compression,consolidateFiles,k,buckets,stages"
-
-      val token: Array[Object] = Array(property.algorithmName,
-        property.dataset,
-        property.sparkPartition.toString,
-        timaAll.toString,
-        property.customColumnValue,
-        property.sparkCoresMax.toString,
-        property.sparkShuffleManager,
-        property.sparkCompressionCodec,
-        property.sparkShuffleConsolidateFiles,
-        k.toString,
-        buckets.toString,
-        stages.toString)
-
-      printFile.write(joiner.join(token) + "\n")
-      printFile.close
-    }
-
   def printStatENN(
     maxIterations: Int,
     timaAll: Long,
@@ -173,15 +146,15 @@ class CCUtilIO(property: CCPropertiesImmutable) extends Serializable {
     randomRestart: Int,
     printStep: Int,
     totalNode: Long,
-    computingNodes: Long,
-    stoppedNodes: Int,
+    computingNodes: Double,
+    stoppedNodes: Double,
     performance: Boolean,
-    messageNumber: Long) =
+    messageNumber: Long,
+    config: ENNConfig) =
     {
       val printFile = new FileWriter("stats.txt", true)
-      val joiner = Joiner.on(",")
 
-      val desc = "algorithmName,dataset,partition,maxIterations,timeAll,customColumn,cores,shuffleManager,compression,consolidateFiles,k,kMax,epsilon,randomRestart,printingOutput,totalNodes,computingNodes,performance,messageNumber"
+      val desc = "algorithmName,dataset,partition,maxIterations,timeAll,customColumn,cores,shuffleManager,compression,consolidateFiles,k,kMax,epsilon,randomRestart,printingOutput,totalNodes,computingNodes,performance,messageNumber,numberOfComparison"
 
       val token: Array[Object] = Array(property.algorithmName,
         property.dataset,
@@ -202,37 +175,13 @@ class CCUtilIO(property: CCPropertiesImmutable) extends Serializable {
         computingNodes.toString,
         stoppedNodes.toString(),
         performance.toString,
-        messageNumber.toString)
+        messageNumber.toString,
+        config.neigbourAggregation,
+        config.excludeNode.toString,
+        config.dimensionLimit.toString,
+        config.sampling.toString)
 
-      printFile.write(joiner.join(token) + "\n")
-      printFile.close
-    }
-
-  def printCommonStatSuperBit(
-    timaAll: Long,
-    k: Int,
-    superBitStages: Int,
-    superBitBuckets: Int) =
-    {
-      val printFile = new FileWriter("stats.txt", true)
-      val joiner = Joiner.on(",")
-
-      val desc = "algorithmName,dataset,partition,step,timeAll,timeGraph,timeComputation,messageNumber,messageSize,customColumn,cores,shuffleManager,compression,consolidateFiles,iteration"
-
-      val token: Array[Object] = Array(property.algorithmName,
-        property.dataset,
-        property.sparkPartition.toString,
-        timaAll.toString,
-        property.customColumnValue,
-        property.sparkCoresMax.toString,
-        property.sparkShuffleManager,
-        property.sparkCompressionCodec,
-        property.sparkShuffleConsolidateFiles,
-        k.toString,
-        superBitStages.toString,
-        superBitBuckets.toString)
-
-      printFile.write(joiner.join(token) + "\n")
+      printFile.write(token.mkString(",") + "\n")
       printFile.close
     }
 

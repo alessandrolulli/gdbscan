@@ -8,7 +8,9 @@ import java.security.InvalidParameterException;
  * @author Thibault Debatty
  */
 public class Neighbor<TID, T, TN extends INode<TID, T>> implements Comparable<T>, Serializable {
-    public TN node;
+    
+	private static final long serialVersionUID = 1L;
+	public TN node;
     public double similarity;
 
     public boolean is_new = true; // only used by sequential nndescent...
@@ -39,7 +41,8 @@ public class Neighbor<TID, T, TN extends INode<TID, T>> implements Comparable<T>
             return false;
         }
 
-        final Neighbor other_neighbor = (Neighbor) other;
+        @SuppressWarnings("unchecked")
+		final Neighbor<TID,T,TN> other_neighbor = (Neighbor<TID,T,TN>) other;
         return this.node.equals(other_neighbor.node);
     }
 

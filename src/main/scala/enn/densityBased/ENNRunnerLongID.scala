@@ -1,16 +1,16 @@
 package enn.densityBased
 
-import scala.reflect.ClassTag
-import org.apache.spark.broadcast.Broadcast
-import org.apache.spark.rdd.RDD
-import knn.graph.INode
-import knn.graph.IMetric
-import org.apache.spark.SparkContext
-import knn.graph.NeighborList
-import knn.graph.NodeSimple
 import java.util.Random
-import knn.graph.Neighbor
+
+import scala.reflect.ClassTag
+
+import org.apache.spark.SparkContext
+import org.apache.spark.rdd.RDD
 import org.apache.spark.storage.StorageLevel
+
+import knn.graph.INode
+import knn.graph.NeighborList
+import knn.metric.IMetric
 
 /**
  * @author alemare

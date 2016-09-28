@@ -1,11 +1,14 @@
 package enn.densityBased
 
-import scala.reflect.ClassTag
-import knn.graph.INode
-import org.apache.spark.rdd.RDD
-import knn.graph.NeighborList
 import java.util.Random
-import knn.graph.IMetric
+
+import scala.reflect.ClassTag
+
+import org.apache.spark.rdd.RDD
+
+import knn.graph.INode
+import knn.graph.NeighborList
+import knn.metric.IMetric
 
 abstract class ENNNodeManager[TID : ClassTag, T : ClassTag, TN <: INode[TID, T] : ClassTag] extends Serializable
 {
