@@ -12,3 +12,4 @@ target
 .cache-main
 .settings
 lib/spark-assembly-1.5.0-hadoop2.4.0.jar
+.tmpBin

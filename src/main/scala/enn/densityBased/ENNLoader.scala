@@ -1,21 +1,26 @@
 package enn.densityBased
 
+import java.util.HashSet
+
 import scala.collection.JavaConversions._
 import scala.reflect.ClassTag
+
 import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.rdd.RDD
+
 import knn.graph.INode
+import knn.graph.impl.NodeGeneric
+import knn.graph.impl.NodeSimple
+import knn.metric.IMetric
+import knn.metric.impl.EuclidianDistance2D
+import knn.metric.impl.EuclidianDistanceND
+import knn.metric.impl.JaccardSimilaritySet
+import knn.metric.impl.JaroWinkler
 import knn.util.Point2D
+import knn.util.PointND
 import util.CCProperties
 import util.CCPropertiesImmutable
 import util.CCUtil
-import java.util.HashSet
-import knn.metric.IMetric
-import knn.graph.impl.NodeGeneric
-import knn.metric.impl.JaroWinkler
-import knn.metric.impl.EuclidianDistance2D
-import knn.metric.impl.JaccardSimilaritySet
-import knn.graph.impl.NodeSimple
 
 /**
  * @author alemare
@@ -68,6 +73,18 @@ class ENNLoader( args_ : Array[String] ) extends Serializable
                     
                     ennRunner.run(metric, vertexRDD.map(t => nodeManager.createNode(t._1, t._2)))
                 }
+                case "Household" =>
+                {
+                    val vertexRDD = loadHousehold( file , config.property)
+                    val metric : IMetric[Long, PointND, NodeGeneric[Long, PointND]] = 
+                      new EuclidianDistanceND[Long, PointND, NodeGeneric[Long, PointND]]
+                    val nodeManager = new ENNNodeManagerValueOnNodeLong[PointND](sc)
+                    nodeManager.init(vertexRDD)
+                    
+                    val ennRunner = getENNRunnerLongID[PointND, NodeGeneric[Long, PointND]](nodeManager)
+                    
+                    ennRunner.run(metric, vertexRDD.map(t => nodeManager.createNode(t._1, t._2)))
+                }
             }
         
         sc.stop
@@ -76,6 +93,26 @@ class ENNLoader( args_ : Array[String] ) extends Serializable
     def getENNRunnerLongID[T : ClassTag, TN <: INode[Long, T] : ClassTag](nodeManager : ENNNodeManager[Long, T, TN]) =
     {
         new ENNRunnerLongID[T, TN](printer, config, nodeManager, sc)
+    }
+    
+    def loadHousehold( data : RDD[String], property : CCPropertiesImmutable ) : RDD[( Long, PointND )] =
+    {
+        val toReturnEdgeList : RDD[( Long, PointND )] = data.map( line =>
+            {
+                val splitted = line.split( ";" )
+//                val splitted = line.split( property.separator )
+                if ( splitted.size >= 2 ) {
+                    try {
+                        ( splitted( 0 ).toLong, new PointND(splitted.slice(3, 10).map(t => t.toDouble).toArray) )
+                    } catch {
+                        case e : Exception => ( -1L, PointND.NOT_VALID )
+                    }
+                } else {
+                    ( -1L, PointND.NOT_VALID )
+                }
+            } )
+
+        toReturnEdgeList.filter( t => t._2.size() > 0 )
     }
     
     def loadTransactionData( data : RDD[String], property : CCPropertiesImmutable ) : RDD[( Long, java.util.Set[Int] )] =
