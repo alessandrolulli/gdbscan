@@ -44,7 +44,7 @@ class ENNConfig( args_ : Array[String], appName : String = "ENN" ) extends Seria
     val performance = propertyLoad.getBoolean( "performance", true );
     val messageStat = propertyLoad.getBoolean( "messageStat", false );
     val endIterationValue = if (performance) -1 else -2
-    val knnMetricDoubleCalculation = propertyLoad.getBoolean( "knnMetricDoubleCalculation", true );
+    val knnMetricDoubleCalculation = propertyLoad.getBoolean( "knnMetricDoubleCalculation", false );
 
     val epsilonStart = propertyLoad.getInt( "epsilonStart", 0 );
     val epsilonEnd = propertyLoad.getInt( "epsilonEnd", 10 );

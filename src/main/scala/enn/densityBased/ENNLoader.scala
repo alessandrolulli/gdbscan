@@ -61,6 +61,18 @@ class ENNLoader( args_ : Array[String] ) extends Serializable
                     
                     ennRunner.run(metric, vertexRDD.map(t => nodeManager.createNode(t._1.toLong, t._2)))
                 }
+                case "PointND" =>
+                {
+                    val vertexRDD = loadPointND( file , config.property, config.dimensionLimit)
+                    val metric = new EuclidianDistanceND[Long, PointND, NodeGeneric[Long, PointND]]
+//                    val nodeManager = new ENNNodeManagerValueOnMapLong[Point2D](sc)
+                    val nodeManager = new ENNNodeManagerValueOnNodeLong[PointND](sc)
+                    nodeManager.init(vertexRDD.map(t => (t._1.toLong, t._2)))
+
+                    val ennRunner = getENNRunnerLongID[PointND, NodeGeneric[Long, PointND]](nodeManager)
+
+                    ennRunner.run(metric, vertexRDD.map(t => nodeManager.createNode(t._1.toLong, t._2)))
+                }
                 case "Transaction" =>
                 {
                     val vertexRDD = loadTransactionData( file , config.property)
@@ -109,6 +121,25 @@ class ENNLoader( args_ : Array[String] ) extends Serializable
                     }
                 } else {
                     ( -1L, PointND.NOT_VALID )
+                }
+            } )
+
+        toReturnEdgeList.filter( t => t._2.size() > 0 )
+    }
+    
+    def loadPointND( data : RDD[String], property : CCPropertiesImmutable, dimensionLimit : Int ) : RDD[( String, PointND )] =
+    {
+        val toReturnEdgeList : RDD[( String, PointND )] = data.map( line =>
+            {
+                val splitted = line.split( property.separator )
+                if (!splitted( 0 ).trim.isEmpty ) {
+                    try {
+                        ( splitted( 0 ), new PointND(splitted(config.columnDataA).split(" ").slice(0, dimensionLimit).map(x => x.toDouble) ))
+                    } catch {
+                        case e : Exception => ( "EMPTY", PointND.NOT_VALID )
+                    }
+                } else {
+                    ( "EMPTY", PointND.NOT_VALID )
                 }
             } )
 
