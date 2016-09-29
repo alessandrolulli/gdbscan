@@ -136,11 +136,14 @@ class ENNScala[TID : ClassTag, T : ClassTag, TN <: INode[TID, T] : ClassTag](@tr
                                     if (tValue.isDefined && !nodeExcluded.value.contains(t.getId)) {
                                         nodes.map(u =>
                                             {
-                                                val uValue = nodeManager.getNodeValue(u)
-                                                if (u.getId.hashCode < t.getId.hashCode && uValue.isDefined && !nodeExcluded.value.contains(u.getId)) {
-                                                    val r = _metric.compare(uValue.get, tValue.get)
-                                                    toReturn(u.getId)._2.add(new Neighbor[TID, T, TN](t, r))
-                                                    toReturn(t.getId)._2.add(new Neighbor[TID, T, TN](u, r))
+                                                if (u.getId.hashCode < t.getId.hashCode && !nodeExcluded.value.contains(u.getId)) {
+                                                    val uValue = nodeManager.getNodeValue(u)
+                                                    if(uValue.isDefined)
+                                                    {
+                                                        val r = _metric.compare(uValue.get, tValue.get)
+                                                        toReturn(u.getId)._2.add(new Neighbor[TID, T, TN](t, r))
+                                                        toReturn(t.getId)._2.add(new Neighbor[TID, T, TN](u, r))
+                                                    }
                                                 }
                                             })
                                     }
