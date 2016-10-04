@@ -5,6 +5,9 @@ import scala.collection.JavaConversions._
 import util.CCProperties
 import util.CCPropertiesImmutable
 import util.CCUtil
+import enn.densityBased.init.ENNInitRandom
+import enn.densityBased.init.ENNInitCircle
+import enn.densityBased.init.ENNInitSystematicSampling
 
 /**
  * @author alemare
@@ -51,6 +54,14 @@ class ENNConfig( args_ : Array[String], appName : String = "ENN" ) extends Seria
     val epsilonIncrement = propertyLoad.getInt( "epsilonIncrement", 1 );
 
     val dimensionLimit = propertyLoad.getInt( "dimensionLimit", 2 );
+    
+    val initPolicy = propertyLoad.get("initPolicy", "RANDOM") match
+		{
+			case "RANDOM" => new ENNInitRandom(this)
+			case "CIRCLE" => new ENNInitCircle(this)
+			case "SYSTEMATIC" => new ENNInitSystematicSampling(this)
+			case _ => new ENNInitRandom(this)
+		}
 
     val util = new CCUtil( property );
 

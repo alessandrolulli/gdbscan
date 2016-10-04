@@ -22,15 +22,7 @@ class ENNNodeManagerValueOnNodeLong[T : ClassTag](@transient val scHere : SparkC
         val count = vertexRDD.count
         val neighborListFactory = metric.getNeighborListFactory
         
-        val randomNeighbors = vertexRDD.map(t => (t,
-        {
-           val rand = new Random
-           
-           (1 to _config.k) map (_  => 
-           {
-               nextLong(rand, count)
-           })
-        }))
+        val randomNeighbors = vertexRDD.map(t => (t, _config.initPolicy.generateKId(t.getId, count)))
         
         val invertedNeighbours = randomNeighbors.flatMap(t => (t._2.map(u => (u, t._1)))).groupByKey
         
