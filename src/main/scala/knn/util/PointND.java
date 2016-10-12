@@ -1,8 +1,7 @@
 package knn.util;
 
-import java.io.Serializable;
 
-public class PointND implements Serializable
+public class PointND implements IPointND
 {
 	private static final long serialVersionUID = 1L;
 
@@ -15,11 +14,13 @@ public class PointND implements Serializable
 		_point = point_;
 	}
 
+	@Override
 	public int size()
 	{
 		return _point.length;
 	}
 
+	@Override
 	public double get(int i_)
 	{
 		/*
