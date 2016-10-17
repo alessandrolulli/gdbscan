@@ -125,7 +125,7 @@ class ENNLoader( args_ : Array[String] ) extends Serializable
                 }
                 case "BagOfWords" =>
                 {
-                    val vertexRDD = loadBagOfWords(file , config.property)
+                    val vertexRDD = loadBagOfWords(file , config.property, config)
                     val metric : IMetric[Long, PointNDSparse, NodeGeneric[Long, PointNDSparse]] = 
                       new CosineSimilarityNDSparse[Long, NodeGeneric[Long, PointNDSparse]]
                     val nodeManager = new ENNNodeManagerValueOnNodeLong[PointNDSparse](sc)
@@ -137,7 +137,7 @@ class ENNLoader( args_ : Array[String] ) extends Serializable
                 }
                 case "BagOfWordsMAP" =>
                 {
-                    val vertexRDD = loadBagOfWords(file , config.property)
+                    val vertexRDD = loadBagOfWords(file , config.property, config)
                     val metric : IMetric[Long, PointNDSparse, NodeSimple[Long, PointNDSparse]] = 
                       new CosineSimilarityNDSparse[Long, NodeSimple[Long, PointNDSparse]]
                     val nodeManager = new ENNNodeManagerValueOnMapLong[PointNDSparse](sc)
@@ -177,7 +177,7 @@ class ENNLoader( args_ : Array[String] ) extends Serializable
         toReturnEdgeList.filter( t => t._2.size() > 0 )
     }
     
-    def loadBagOfWords( data : RDD[String], property : CCPropertiesImmutable ) : RDD[( Long, PointNDSparse )] =
+    def loadBagOfWords( data : RDD[String], property : CCPropertiesImmutable , config : ENNConfig) : RDD[( Long, PointNDSparse )] =
     {
         val toReturnEdgeList : RDD[( Long, (Int, Int))] = data.map( line =>
             {
@@ -193,7 +193,7 @@ class ENNLoader( args_ : Array[String] ) extends Serializable
                 }
             } ).filter( t => t._1 > 0 )
             
-        toReturnEdgeList.groupByKey.map(t => 
+        val toReturn = toReturnEdgeList.groupByKey.map(t => 
           {
             val size = t._2.size
             val sorted = t._2.toList.sortWith(_._1 < _._1)
@@ -203,6 +203,15 @@ class ENNLoader( args_ : Array[String] ) extends Serializable
             
             (t._1, point)
           })
+          
+        val n = toReturn.count()
+        val sizeRDD = toReturn.map(t => t._2.size())
+        val d = sizeRDD.max()
+        val avg = sizeRDD.mean()
+        
+        config.util.io.printStat(n+","+d+","+avg, "(n,d,dAVG) of dataset: "+config.property.dataset)
+          
+        toReturn
     }
     
     def loadPointND( data : RDD[String], property : CCPropertiesImmutable, dimensionLimit : Int ) : RDD[( String, PointND )] =
