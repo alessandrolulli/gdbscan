@@ -1,6 +1,8 @@
 package knn.util;
 
-public class PointNDSparse
+import java.io.Serializable;
+
+public class PointNDSparse implements Serializable
 {
 	private final int[] _index;
 	private final int[] _value;
@@ -30,5 +32,17 @@ public class PointNDSparse
 	public int size()
 	{
 		return _index.length;
+	}
+	
+	public String toString()
+	{
+		StringBuilder b = new StringBuilder();
+		
+		for(int i = 0 ; i < size() ; i++)
+		{
+			b.append(getIndex(i)+" "+getValue(i)+"|||");
+		}
+		
+		return b.toString();
 	}
 }

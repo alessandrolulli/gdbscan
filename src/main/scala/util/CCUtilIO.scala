@@ -7,7 +7,6 @@ import org.apache.spark.SparkContext._
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
 
-import com.google.common.base.Joiner
 import enn.densityBased.ENNConfig
 
 class CCUtilIO(property: CCPropertiesImmutable) extends Serializable {
@@ -40,8 +39,6 @@ class CCUtilIO(property: CCPropertiesImmutable) extends Serializable {
 
   def printSimplification(step: Int, activeVertices: Long, initialVertices: Long, activeEdges: Double, degreeMax: Int) =
     {
-      val joiner = Joiner.on(",")
-
       val printFile = new FileWriter("simplification.txt", true)
 
       val token: Array[Object] = Array(property.dataset,
@@ -52,15 +49,13 @@ class CCUtilIO(property: CCPropertiesImmutable) extends Serializable {
         activeEdges.toString,
         (activeEdges / activeVertices).toString,
         degreeMax.toString)
-      printFile.write(joiner.join(token) + "\n")
+      printFile.write(token.mkString(",") + "\n")
 
       printFile.close
     }
 
   def printTimeStep(step: Int, time: Long) =
     {
-      val joiner = Joiner.on(",")
-
       val printFile = new FileWriter("timeStep.txt", true)
 
       // dataset, algorithmName, step, time
@@ -72,19 +67,17 @@ class CCUtilIO(property: CCPropertiesImmutable) extends Serializable {
         property.switchLocal.toString,
         property.sparkShuffleManager,
         property.sparkCompressionCodec)
-      printFile.write(joiner.join(token) + "\n")
+      printFile.write(token.mkString(",") + "\n")
 
       printFile.close
     }
 
   def printMessageStep(step: Int, messageNumber: Long, messageSize: Long, bitmaskCustom: String = "000") =
     {
-      val joiner = Joiner.on(",")
-
       val printFile = new FileWriter("messageStep.txt", true)
 
       val token: Array[Object] = Array(property.dataset, property.algorithmName, step.toString, messageNumber.toString, messageSize.toString, bitmaskCustom, property.sparkShuffleConsolidateFiles)
-      printFile.write(joiner.join(token) + "\n")
+      printFile.write(token.mkString(",") + "\n")
 
       printFile.close
     }
@@ -93,13 +86,12 @@ class CCUtilIO(property: CCPropertiesImmutable) extends Serializable {
     value: String) =
     {
       val printFile = new FileWriter("stats.txt", true)
-      val joiner = Joiner.on(",")
 
       val token: Array[Object] = Array(property.algorithmName,
         property.dataset,
         value)
 
-      printFile.write(joiner.join(token) + "\n")
+      printFile.write(token.mkString(",") + "\n")
       printFile.close
     }
 
@@ -113,7 +105,6 @@ class CCUtilIO(property: CCPropertiesImmutable) extends Serializable {
     iteration: Int) =
     {
       val printFile = new FileWriter("stats.txt", true)
-      val joiner = Joiner.on(",")
 
       val desc = "algorithmName,dataset,partition,step,timeAll,timeGraph,timeComputation,messageNumber,messageSize,customColumn,cores,shuffleManager,compression,consolidateFiles,iteration"
 
@@ -133,7 +124,7 @@ class CCUtilIO(property: CCPropertiesImmutable) extends Serializable {
         property.sparkShuffleConsolidateFiles,
         iteration.toString)
 
-      printFile.write(joiner.join(token) + "\n")
+      printFile.write(token.mkString(",") + "\n")
       printFile.close
     }
 
@@ -201,7 +192,6 @@ class CCUtilIO(property: CCPropertiesImmutable) extends Serializable {
                    bitmaskCustom: String = "000") =
     {
       val printFile = new FileWriter("stats.txt", true)
-      val joiner = Joiner.on(",")
 
       val token: Array[Object] = Array(algorithmName,
         dataset,
@@ -225,7 +215,7 @@ class CCUtilIO(property: CCPropertiesImmutable) extends Serializable {
         property.edgeThreshold.toString,
         property.coreThreshold.toString)
 
-      printFile.write(joiner.join(token) + "\n")
+      printFile.write(token.mkString(",") + "\n")
       printFile.close
     }
 
@@ -247,7 +237,6 @@ class CCUtilIO(property: CCPropertiesImmutable) extends Serializable {
                           randomRestart: Int) =
     {
       val printFile = new FileWriter("stats.txt", true)
-      val joiner = Joiner.on(",")
 
       val desc = "algorithmName,dataset,partition,step,timaAll,timeLoadingAndComputation,timeComputation,ccNumber,ccNumberNoIsolatedVertices,ccMaxSize,ccMaxSizeNotNoise,customColumnValue,sparkCoresMax,epsilon,coreThreshold,k,kMax,randomRestart"
 
@@ -270,14 +259,13 @@ class CCUtilIO(property: CCPropertiesImmutable) extends Serializable {
         kMax.toString,
         randomRestart.toString)
 
-      printFile.write(joiner.join(token) + "\n")
+      printFile.write(token.mkString(",") + "\n")
       printFile.close
     }
 
   def printCCDistribution(rdd: RDD[(Long, Int)]) =
     {
       val printFile = new FileWriter("distribution.txt", true)
-      val joiner = Joiner.on(",")
 
       val ccDistribution = rdd.map(t => (t._2, 1)).reduceByKey { case (a, b) => a + b }.map(t => t._1 + "," + t._2 + "\n").reduce { case (a, b) => a + b }
 
@@ -292,7 +280,6 @@ class CCUtilIO(property: CCPropertiesImmutable) extends Serializable {
   def printCCDistributionString(rdd: RDD[(String, Int)]) =
     {
       val printFile = new FileWriter("distribution.txt", true)
-      val joiner = Joiner.on(",")
 
       val ccDistribution = rdd.map(t => (t._2, 1)).reduceByKey { case (a, b) => a + b }.map(t => property.dataset + "," + t._1 + "," + t._2 + "," + property.edgeThreshold.toString + "\n").reduce { case (a, b) => a + b }
 
@@ -315,7 +302,6 @@ class CCUtilIO(property: CCPropertiesImmutable) extends Serializable {
     validClusterNumber: Int) =
     {
       val printFile = new FileWriter("stats.txt", true)
-      val joiner = Joiner.on(",")
 
       // description = algorithmName,dataset,dataset2,custom,k,iteration,edgeThreshold,minimalInterClusterDistance,maximalIntraClusterDistance,dunn,separation,compactness,silhoutte,validClusterNumber
       val token: Array[Object] = Array(property.algorithmName,
@@ -333,14 +319,13 @@ class CCUtilIO(property: CCPropertiesImmutable) extends Serializable {
         silhoutte.toString,
         validClusterNumber.toString)
 
-      printFile.write(joiner.join(token) + "\n")
+      printFile.write(token.mkString(",") + "\n")
       printFile.close
     }
 
   def printCC(rdd: RDD[(Long, Int)]) =
     {
       val printFile = new FileWriter("cc.txt", true)
-      val joiner = Joiner.on(",")
 
       val ccDistribution = rdd.map(t => t._1 + "," + t._2 + "\n").reduce { case (a, b) => a + b }
 

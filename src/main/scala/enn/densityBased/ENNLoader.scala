@@ -21,6 +21,8 @@ import knn.util.PointND
 import util.CCProperties
 import util.CCPropertiesImmutable
 import util.CCUtil
+import knn.util.PointNDSparse
+import knn.metric.impl.CosineSimilarityNDSparse
 
 /**
  * @author alemare
@@ -85,6 +87,18 @@ class ENNLoader( args_ : Array[String] ) extends Serializable
                     
                     ennRunner.run(metric, vertexRDD.map(t => nodeManager.createNode(t._1, t._2)))
                 }
+                case "TransactionMAP" =>
+                {
+                    val vertexRDD = loadTransactionData( file , config.property)
+                    val metric : IMetric[Long, java.util.Set[Int], NodeSimple[Long, java.util.Set[Int]]] = 
+                      new JaccardSimilaritySet[Long, Int, java.util.Set[Int], NodeSimple[Long, java.util.Set[Int]]]
+                    val nodeManager = new ENNNodeManagerValueOnMapLong[java.util.Set[Int]](sc)
+                    nodeManager.init(vertexRDD)
+                    
+                    val ennRunner = getENNRunnerLongID[java.util.Set[Int], NodeSimple[Long, java.util.Set[Int]]](nodeManager)
+                    
+                    ennRunner.run(metric, vertexRDD.map(t => nodeManager.createNode(t._1, t._2)))
+                }
                 case "Household" =>
                 {
                     val vertexRDD = loadHousehold( file , config.property)
@@ -94,6 +108,42 @@ class ENNLoader( args_ : Array[String] ) extends Serializable
                     nodeManager.init(vertexRDD)
                     
                     val ennRunner = getENNRunnerLongID[PointND, NodeGeneric[Long, PointND]](nodeManager)
+                    
+                    ennRunner.run(metric, vertexRDD.map(t => nodeManager.createNode(t._1, t._2)))
+                }
+                case "HouseholdMAP" =>
+                {
+                    val vertexRDD = loadHousehold( file , config.property)
+                    val metric : IMetric[Long, PointND, NodeSimple[Long, PointND]] = 
+                      new EuclidianDistanceND[Long, PointND, NodeSimple[Long, PointND]]
+                    val nodeManager = new ENNNodeManagerValueOnMapLong[PointND](sc)
+                    nodeManager.init(vertexRDD)
+                    
+                    val ennRunner = getENNRunnerLongID[PointND, NodeSimple[Long, PointND]](nodeManager)
+                    
+                    ennRunner.run(metric, vertexRDD.map(t => nodeManager.createNode(t._1, t._2)))
+                }
+                case "BagOfWords" =>
+                {
+                    val vertexRDD = loadBagOfWords(file , config.property)
+                    val metric : IMetric[Long, PointNDSparse, NodeGeneric[Long, PointNDSparse]] = 
+                      new CosineSimilarityNDSparse[Long, NodeGeneric[Long, PointNDSparse]]
+                    val nodeManager = new ENNNodeManagerValueOnNodeLong[PointNDSparse](sc)
+                    nodeManager.init(vertexRDD)
+                    
+                    val ennRunner = getENNRunnerLongID[PointNDSparse, NodeGeneric[Long, PointNDSparse]](nodeManager)
+                    
+                    ennRunner.run(metric, vertexRDD.map(t => nodeManager.createNode(t._1, t._2)))
+                }
+                case "BagOfWordsMAP" =>
+                {
+                    val vertexRDD = loadBagOfWords(file , config.property)
+                    val metric : IMetric[Long, PointNDSparse, NodeSimple[Long, PointNDSparse]] = 
+                      new CosineSimilarityNDSparse[Long, NodeSimple[Long, PointNDSparse]]
+                    val nodeManager = new ENNNodeManagerValueOnMapLong[PointNDSparse](sc)
+                    nodeManager.init(vertexRDD)
+                    
+                    val ennRunner = getENNRunnerLongID[PointNDSparse, NodeSimple[Long, PointNDSparse]](nodeManager)
                     
                     ennRunner.run(metric, vertexRDD.map(t => nodeManager.createNode(t._1, t._2)))
                 }
@@ -125,6 +175,34 @@ class ENNLoader( args_ : Array[String] ) extends Serializable
             } )
 
         toReturnEdgeList.filter( t => t._2.size() > 0 )
+    }
+    
+    def loadBagOfWords( data : RDD[String], property : CCPropertiesImmutable ) : RDD[( Long, PointNDSparse )] =
+    {
+        val toReturnEdgeList : RDD[( Long, (Int, Int))] = data.map( line =>
+            {
+                val splitted = line.split( " " )
+                if ( splitted.size >= 3 ) {
+                    try {
+                        ( splitted( 0 ).toLong, (splitted(1).toInt, splitted(2).toInt) )
+                    } catch {
+                        case e : Exception => ( -1L, (-1,-1) )
+                    }
+                } else {
+                    ( -1L, (-1,-1) )
+                }
+            } ).filter( t => t._1 > 0 )
+            
+        toReturnEdgeList.groupByKey.map(t => 
+          {
+            val size = t._2.size
+            val sorted = t._2.toList.sortWith(_._1 < _._1)
+            val point = new PointNDSparse(size)
+            
+            sorted.zipWithIndex.map(u => point.add(u._2, u._1._1, u._1._2))
+            
+            (t._1, point)
+          })
     }
     
     def loadPointND( data : RDD[String], property : CCPropertiesImmutable, dimensionLimit : Int ) : RDD[( String, PointND )] =
