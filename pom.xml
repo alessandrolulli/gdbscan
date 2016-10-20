@@ -24,17 +24,18 @@
 	<dependencies>
 		<dependency>
 			<groupId>org.apache.spark</groupId>
-			<artifactId>spark-core_2.10</artifactId>
+			<artifactId>spark-core_2.11</artifactId>
 			<version>1.5.0</version>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.spark</groupId>
-			<artifactId>spark-mllib_2.10</artifactId>
+			<artifactId>spark-mllib_2.11</artifactId>
 			<version>1.5.0</version>
 		</dependency>
 		<dependency>
 			<groupId>org.scala-lang</groupId>
 			<artifactId>scala-library</artifactId>
+			<!-- <version>2.11.8</version> -->
 			<version>2.10.6</version>
 		</dependency>
 		<dependency>
@@ -45,7 +46,7 @@
 		</dependency>
 	</dependencies>
 	<build>
-<!-- 		<sourceDirectory>${basedir}/src</sourceDirectory> -->
+		<!-- <sourceDirectory>${basedir}/src</sourceDirectory> -->
 		<plugins>
 			<!-- <plugin> -->
 			<!-- <groupId>org.apache.maven.plugins</groupId> -->
@@ -73,6 +74,58 @@
 				<version>2.2</version>
 				<!-- nothing here -->
 			</plugin>
+<!-- 			<plugin> -->
+<!-- 				<groupId>org.apache.maven.plugins</groupId> -->
+<!-- 				<artifactId>maven-shade-plugin</artifactId> -->
+<!-- 				<version>1.5</version> -->
+<!-- 				<executions> -->
+<!-- 					<execution> -->
+<!-- 						<phase>package</phase> -->
+<!-- 						<goals> -->
+<!-- 							<goal>shade</goal> -->
+<!-- 						</goals> -->
+<!-- 						<configuration> -->
+<!-- 							<shadedArtifactAttached>true</shadedArtifactAttached> -->
+<!-- 							<shadedClassifierName>allinone</shadedClassifierName> -->
+<!-- 							<artifactSet> -->
+<!-- 								<includes> -->
+<!-- 									<include>*:*</include> -->
+<!-- 								</includes> -->
+<!-- 							</artifactSet> -->
+<!-- 							<filters> -->
+<!-- 								<filter> -->
+<!-- 									<artifact>*:*</artifact> -->
+<!-- 									<excludes> -->
+<!-- 										<exclude>META-INF/*.SF</exclude> -->
+<!-- 										<exclude>META-INF/*.DSA</exclude> -->
+<!-- 										<exclude>META-INF/*.RSA</exclude> -->
+<!-- 									</excludes> -->
+<!-- 								</filter> -->
+<!-- 							</filters> -->
+<!-- 							<transformers> -->
+<!-- 								<transformer -->
+<!-- 									implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer"> -->
+<!-- 									<resource>reference.conf</resource> -->
+<!-- 								</transformer> -->
+<!-- 								<transformer -->
+<!-- 									implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer"> -->
+<!-- 									<resource>META-INF/spring.handlers</resource> -->
+<!-- 								</transformer> -->
+<!-- 								<transformer -->
+<!-- 									implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer"> -->
+<!-- 									<resource>META-INF/spring.schemas</resource> -->
+<!-- 								</transformer> -->
+<!-- 								<transformer -->
+<!-- 									implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer"> -->
+<!-- 									<manifestEntries> -->
+<!-- 										<Main-Class>com.echoed.chamber.Main</Main-Class> -->
+<!-- 									</manifestEntries> -->
+<!-- 								</transformer> -->
+<!-- 							</transformers> -->
+<!-- 						</configuration> -->
+<!-- 					</execution> -->
+<!-- 				</executions> -->
+<!-- 			</plugin> -->
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-assembly-plugin</artifactId>

@@ -36,6 +36,15 @@ class CCUtilIO(property: CCPropertiesImmutable) extends Serializable {
 
       0
     }
+  
+  def printData(file : String, data: String*): Int =
+    {
+      val printFile = new FileWriter(file, true)
+      printFile.write(data.mkString(",") + "\n")
+      printFile.close
+
+      0
+    }
 
   def printSimplification(step: Int, activeVertices: Long, initialVertices: Long, activeEdges: Double, degreeMax: Int) =
     {
