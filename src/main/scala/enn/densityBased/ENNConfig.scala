@@ -52,6 +52,7 @@ class ENNConfig( args_ : Array[String], appName : String = "ENN" ) extends Seria
     val epsilonStart = propertyLoad.getInt( "epsilonStart", 0 );
     val epsilonEnd = propertyLoad.getInt( "epsilonEnd", 10 );
     val epsilonIncrement = propertyLoad.getInt( "epsilonIncrement", 1 );
+    val instrumented = propertyLoad.getBoolean( "instrumented", false );
 
     val dimensionLimit = propertyLoad.getInt( "dimensionLimit", 2 );
     

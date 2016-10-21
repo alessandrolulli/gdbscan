@@ -203,15 +203,15 @@ class ENNScala[TID : ClassTag, T : ClassTag, TN <: INode[TID, T] : ClassTag](@tr
                         val neighborKNN = neighborListFactory.create(Math.max(_config.k, _config.kMax))
                         val neighborKNNSlim = neighborListFactory.create(_config.k)
 
-                            def addDataToList(t : Neighbor[TID, T, TN]) =
-                                {
-                                    if (_metric.isValid(t, _config.epsilon)) {
-                                        neighborKNN.add(t)
-                                    }
-                                    else {
-                                        neighborKNNSlim.add(t)
-                                    }
+                        def addDataToList(t : Neighbor[TID, T, TN]) =
+                            {
+                                if (_metric.isValid(t, _config.epsilon)) {
+                                    neighborKNN.add(t)
                                 }
+                                else {
+                                    neighborKNNSlim.add(t)
+                                }
+                            }
 
                         a.map(addDataToList)
                         b.map(addDataToList)
@@ -284,7 +284,12 @@ class ENNScala[TID : ClassTag, T : ClassTag, TN <: INode[TID, T] : ClassTag](@tr
                         })
 
                 val nodeExludedNumber = nodeExcluded.value.size
-                nodeExcluded = sc.broadcast(graphENNPlusExclusion.filter(t => t._2._2).map(t => t._1.getId).collect().toSet)
+                
+                if(! _config.instrumented)
+                {
+                  nodeExcluded = sc.broadcast(graphENNPlusExclusion.filter(t => t._2._2).map(t => t._1.getId).collect().toSet)
+                }
+                
                 graphENN = graphENNPlusExclusion.map(t => (t._1, t._2._1)).persist(DEFAULT_STORAGE_LEVEL)
 
                 graphENN.first();
@@ -299,6 +304,10 @@ class ENNScala[TID : ClassTag, T : ClassTag, TN <: INode[TID, T] : ClassTag](@tr
                 if (!_config.performance) {
                     printer_.printENN[TID, T, TN](graphENN, iterationNumber);
                 }
+                if(_config.instrumented)
+                {
+                  printer_.printKNNDistribution(iteration, graphKNN)
+                }
 
                 printer_.printTime(iterationNumber, timeEnd - timeBegin, activeNodes, computingNodes, nodeExludedNumber, messageNumber)
 
@@ -309,6 +318,11 @@ class ENNScala[TID : ClassTag, T : ClassTag, TN <: INode[TID, T] : ClassTag](@tr
                     earlyTermination = true
                 }
                 iteration = iteration + 1
+            }
+            
+            if(_config.instrumented)
+            {
+              printer_.printENNDistribution[TID, T, TN](iteration, graphENN)
             }
 
             graphENN

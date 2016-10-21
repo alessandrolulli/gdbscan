@@ -20,11 +20,13 @@ public class ImageToBinary
 		// 1 -> output
 		// 2 -> digit ground truth
 		// 3 -> threshold
+		// 4 -> pruning
 
 		try
 		{
 			String digit = args_[2];
 			double threshold = Double.parseDouble(args_[3]);
+			int pruning = Integer.parseInt(args_[4]);
 			
 			final FileOutputStream fileEdgeList = new FileOutputStream(args_[1]);
 			final PrintStream printEdgeList = new PrintStream(fileEdgeList);
@@ -40,13 +42,17 @@ public class ImageToBinary
 				
 				builder.append(digit);
 				
+				int count = 0;
 				while(st.hasMoreTokens())
 				{
 					double token = Double.parseDouble(st.nextToken());
-					builder.append(","+(token >= threshold ? 1 : 0));
+					boolean valid = token >= threshold;
+					builder.append(","+(valid ? 1 : 0));
+					if(valid) count++;
 				}
 				
-				printEdgeList.println(builder.toString());
+				if(count > pruning)
+					printEdgeList.println(builder.toString());
 			}
 
 			printEdgeList.flush();
