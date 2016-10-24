@@ -10,11 +10,13 @@ import util.CCPropertiesImmutable
 import java.io.PrintWriter
 import java.io.File
 import java.io.FileWriter
+import org.apache.spark.storage.StorageLevel
 
 object CrackerAllComparable {
 
   def mainGO(ennGraph: String, args: Array[String]): Unit =
     {
+      val DEFAULT_STORAGE_LEVEL = StorageLevel.MEMORY_AND_DISK
       val timeBegin = System.currentTimeMillis()
 
       val propertyLoad = new CCProperties("CRACKER_DENSITY", args(0)).load
@@ -63,7 +65,7 @@ object CrackerAllComparable {
 
         ret = ret.flatMap(item => cracker.emitBlue(item, property.coreThreshold))
 
-        ret = ret.reduceByKey(cracker.reduceBlue).cache
+        ret = ret.reduceByKey(cracker.reduceBlue).persist(DEFAULT_STORAGE_LEVEL)
 
         val active = ret.count
         control = active <= 0
@@ -102,14 +104,14 @@ object CrackerAllComparable {
         util.io.printTime(timeStepStart, timeStepBlue, "coalescing")
       }
 
-      var treeRDDPropagation = treeRDDPropagationTmp.reduceByKey(cracker.reducePrepareDataForPropagation).map(t => (t._1, t._2.getMessagePropagation(t._1))).cache
+      var treeRDDPropagation = treeRDDPropagationTmp.reduceByKey(cracker.reducePrepareDataForPropagation).map(t => (t._1, t._2.getMessagePropagation(t._1))).persist(DEFAULT_STORAGE_LEVEL)
       //            .filter(t => !t._2.min.isDefined || (t._2.min.isDefined && !t._2.child.isEmpty))
       control = false
       while (!control) {
         val timeStepStart = System.currentTimeMillis()
         treeRDDPropagation = treeRDDPropagation.flatMap(item => cracker.mapPropagate(item))
 
-        treeRDDPropagation = treeRDDPropagation.reduceByKey(cracker.reducePropagate).cache
+        treeRDDPropagation = treeRDDPropagation.reduceByKey(cracker.reducePropagate).persist(DEFAULT_STORAGE_LEVEL)
         control = treeRDDPropagation.map(t => t._2.min.isDefined).reduce { case (a, b) => a && b }
 
         step = step + 1
