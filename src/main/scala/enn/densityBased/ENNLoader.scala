@@ -54,6 +54,17 @@ class ENNLoader( args_ : Array[String] ) extends Serializable
                     
                     ennRunner.run(metric, vertexRDD.map(t => nodeManager.createNode(t._1.toLong, t._2)))
                 }
+                case "StringMAP" =>
+                {
+                    val vertexRDD = loadStringData( file , config.property)
+                    val metric = new JaroWinkler[Long, NodeSimple[Long, String]]
+                    val nodeManager = new ENNNodeManagerValueOnMapLong[String](sc)
+                    nodeManager.init(vertexRDD.map(t => (t._1.toLong, t._2)))
+                    
+                    val ennRunner = getENNRunnerLongID[String, NodeSimple[Long, String]](nodeManager)
+                    
+                    ennRunner.run(metric, vertexRDD.map(t => nodeManager.createNode(t._1.toLong, t._2)))
+                }
                 case "Point2D" =>
                 {
                     val vertexRDD = loadPoint2D( file , config.property)
