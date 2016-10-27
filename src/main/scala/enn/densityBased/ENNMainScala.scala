@@ -12,11 +12,13 @@ object ENNMainScala {
 
             val ennLoader = new ENNLoader(args_)
 
-            val result = ennLoader.loadAndStart
-
-            val timeEnd = System.currentTimeMillis
-
-            ennLoader.config.util.io.printStatENN(
+            if(!ennLoader.config.skipENN)
+            {
+              val result = ennLoader.loadAndStart
+              
+              val timeEnd = System.currentTimeMillis
+              
+              ennLoader.config.util.io.printStatENN(
                 ennLoader.config.endIterationValue,
                 timeEnd - timeBegin,
                 ennLoader.config.k,
@@ -30,8 +32,13 @@ object ENNMainScala {
                 ennLoader.config.performance,
                 0,
                 ennLoader.config)
+            }
+            
+            ennLoader.stop
 
-            crackerDensity.CrackerAllComparable.mainGO(ennLoader.config.property.outputFile, args_)
-
+            if(!ennLoader.config.skipCluster)
+            {
+              crackerDensity.CrackerAllComparable.mainGO(ennLoader.config.property.outputFile, args_)
+            }
         }
 }

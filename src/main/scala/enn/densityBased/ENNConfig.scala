@@ -27,8 +27,12 @@ class ENNConfig( args_ : Array[String], appName : String = "ENN" ) extends Seria
     val randomRestart = propertyLoad.getInt( "randomRestart", 5 );
     val printStep = propertyLoad.getInt( "printStep", 1 );
 
+    val ennSkip = propertyLoad.getBoolean( "ennSkip", false );
     val knnSkip = propertyLoad.getBoolean( "knnSkip", false );
     val clusterSkip = propertyLoad.getBoolean( "clusterSkip", false );
+    val skipENN = ennSkip;
+    val skipCluster = clusterSkip;
+    
     val clusterMinSize = propertyLoad.getInt( "clusterMinSize", 100 );
     val printOutput = propertyLoad.getBoolean( "printOutput", true );
 

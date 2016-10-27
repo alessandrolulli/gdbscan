@@ -2,8 +2,30 @@ package stats
 
 import enn.densityBased.ENNConfig
 import dataset.DatasetLoad
+import org.apache.spark.rdd.RDD
 
 object DatasetStats {
+
+  def printOutput(rdd: RDD[Int], config: ENNConfig) =
+    {
+      val n = rdd.count()
+
+      val d = rdd.max()
+      val avg = rdd.mean()
+      val freq = rdd.map(t => (t, 1)).reduceByKey(_ + _)
+
+      config.util.io.printData("stats_dataset.txt",
+        config.property.dataset,
+        n.toString,
+        d.toString,
+        avg.toString)
+
+      freq.collect.foreach(t => config.util.io.printData("stats_dataset_freq.txt",
+        config.property.dataset,
+        t._1.toString,
+        t._2.toString))
+    }
+
   def main(args_ : Array[String]): Unit =
     {
       val config = new ENNConfig(args_, "DATASET_STATS")
@@ -15,24 +37,16 @@ object DatasetStats {
         case "BagOfWords" | "BagOfWordsMAP" =>
           {
             val vertexRDD = DatasetLoad.loadBagOfWords(file, config.property, config)
-
-            val n = vertexRDD.count()
             val sizeRDD = vertexRDD.map(t => t._2.size())
-            val d = sizeRDD.max()
-            val avg = sizeRDD.mean()
-            val freq = sizeRDD.map(t => (t, 1)).reduceByKey(_+_)
-            
-            config.util.io.printData("stats_dataset.txt", 
-                                      config.property.dataset,
-                                      n.toString, 
-                                      d.toString, 
-                                      avg.toString)
-            
-            freq.collect.foreach(t => config.util.io.printData("stats_dataset_freq.txt", 
-                                      config.property.dataset,
-                                      t._1.toString,
-                                      t._2.toString))  
 
+            printOutput(sizeRDD, config)
+          }
+        case "Transaction" | "TransactionMAP" =>
+          {
+            val vertexRDD = DatasetLoad.loadTransactionData(file, config.property)
+            val sizeRDD = vertexRDD.map(t => t._2.size())
+
+            printOutput(sizeRDD, config)
           }
       }
     }

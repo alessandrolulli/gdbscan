@@ -5,6 +5,8 @@ import org.apache.spark.rdd.RDD
 import enn.densityBased.ENNConfig
 import knn.util.PointNDSparse
 import knn.util.PointNDBoolean
+import java.util.HashSet
+import scala.collection.JavaConversions._
 
 object DatasetLoad {
   def loadBagOfWords( data : RDD[String], property : CCPropertiesImmutable , config : ENNConfig) : RDD[( Long, PointNDSparse )] =
@@ -57,5 +59,28 @@ object DatasetLoad {
             } ).filter( t => t._1 > 0 )
             
         toReturnEdgeList
+    }
+  
+  def loadTransactionData( data : RDD[String], property : CCPropertiesImmutable ) : RDD[( Long, java.util.Set[Int] )] =
+    {
+        val toReturnEdgeList : RDD[( Long, java.util.Set[Int] )] = data.map( line =>
+            {
+                val splitted = line.split( ";" )
+//                val splitted = line.split( property.separator )
+                if ( splitted.size >= 2 ) {
+                    try {
+                        val set : java.util.Set[Int] = new java.util.HashSet
+                        val elSet = splitted(2).split(" ").map(_.toInt).toSet
+                        set.addAll(elSet)
+                        ( splitted( 0 ).toLong, set )
+                    } catch {
+                        case e : Exception => ( -1L, new HashSet() )
+                    }
+                } else {
+                    ( -1L, new HashSet() )
+                }
+            } )
+
+        toReturnEdgeList.filter( t => !t._2.isEmpty )
     }
 }

@@ -283,12 +283,12 @@ class ENNScala[TID : ClassTag, T : ClassTag, TN <: INode[TID, T] : ClassTag](@tr
                             }
                         })
 
-                val nodeExludedNumber = nodeExcluded.value.size
-                
                 if(! _config.instrumented)
                 {
                   nodeExcluded = sc.broadcast(graphENNPlusExclusion.filter(t => t._2._2).map(t => t._1.getId).collect().toSet)
                 }
+                
+                val nodeExludedNumber = nodeExcluded.value.size
                 
                 graphENN = graphENNPlusExclusion.map(t => (t._1, t._2._1)).persist(DEFAULT_STORAGE_LEVEL)
 
@@ -314,7 +314,7 @@ class ENNScala[TID : ClassTag, T : ClassTag, TN <: INode[TID, T] : ClassTag](@tr
                 /*
              * early termination mechanism
              */
-                if (activeNodes < (totalNodes * _config.terminationActiveNodes) && nodeExludedNumber < (totalNodes * _config.terminationRemovedNodes)) {
+                if ((activeNodes - nodeExludedNumber <= 0) ||  activeNodes < (totalNodes * _config.terminationActiveNodes) && nodeExludedNumber < (totalNodes * _config.terminationRemovedNodes)) {
                     earlyTermination = true
                 }
                 iteration = iteration + 1

@@ -255,7 +255,7 @@ class CCUtil(property : CCPropertiesImmutable) extends Serializable {
 	    
 			val toReturnEdgeList = data.flatMap(line =>
 				{
-					val splitted = line.split(property.separator)
+					val splitted = line.split("\t")
 					if (splitted.size >= 1 && !splitted(0).trim.isEmpty()) {
 						try {
 							val splitted2 = splitted(1).split(" ")
