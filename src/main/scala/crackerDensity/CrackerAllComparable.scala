@@ -138,5 +138,7 @@ object CrackerAllComparable {
         toPrint.coalesce(1, true).saveAsTextFile(property.outputFile + "_CLUSTERING")
       }
 
+      spark.stop
+
     }
 }

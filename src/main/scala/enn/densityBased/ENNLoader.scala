@@ -45,7 +45,7 @@ class ENNLoader( args_ : Array[String] ) extends Serializable
             config.propertyLoad.get( "ennType", "String" ) match {
                 case "String" =>
                 {
-                    val vertexRDD = loadStringData( file , config.property)
+                    val vertexRDD = DatasetLoad.loadStringData( file , config.property, config)
                     val metric = new JaroWinkler[Long, NodeGeneric[Long, String]]
                     val nodeManager = new ENNNodeManagerValueOnNodeLong[String](sc)
                     nodeManager.init(vertexRDD.map(t => (t._1.toLong, t._2)))
@@ -56,7 +56,7 @@ class ENNLoader( args_ : Array[String] ) extends Serializable
                 }
                 case "StringMAP" =>
                 {
-                    val vertexRDD = loadStringData( file , config.property)
+                    val vertexRDD = DatasetLoad.loadStringData( file , config.property, config)
                     val metric = new JaroWinkler[Long, NodeSimple[Long, String]]
                     val nodeManager = new ENNNodeManagerValueOnMapLong[String](sc)
                     nodeManager.init(vertexRDD.map(t => (t._1.toLong, t._2)))
@@ -115,7 +115,7 @@ class ENNLoader( args_ : Array[String] ) extends Serializable
                 }
                 case "Household" =>
                 {
-                    val vertexRDD = loadHousehold( file , config.property)
+                    val vertexRDD = DatasetLoad.loadHousehold( file , config.property)
                     val metric : IMetric[Long, PointND, NodeGeneric[Long, PointND]] = 
                       new EuclidianDistanceND[Long, PointND, NodeGeneric[Long, PointND]]
                     val nodeManager = new ENNNodeManagerValueOnNodeLong[PointND](sc)
@@ -127,7 +127,7 @@ class ENNLoader( args_ : Array[String] ) extends Serializable
                 }
                 case "HouseholdMAP" =>
                 {
-                    val vertexRDD = loadHousehold( file , config.property)
+                    val vertexRDD = DatasetLoad.loadHousehold( file , config.property)
                     val metric : IMetric[Long, PointND, NodeSimple[Long, PointND]] = 
                       new EuclidianDistanceND[Long, PointND, NodeSimple[Long, PointND]]
                     val nodeManager = new ENNNodeManagerValueOnMapLong[PointND](sc)
@@ -199,26 +199,6 @@ class ENNLoader( args_ : Array[String] ) extends Serializable
         new ENNRunnerLongID[T, TN](printer, config, nodeManager, sc)
     }
     
-    def loadHousehold( data : RDD[String], property : CCPropertiesImmutable ) : RDD[( Long, PointND )] =
-    {
-        val toReturnEdgeList : RDD[( Long, PointND )] = data.map( line =>
-            {
-                val splitted = line.split( ";" )
-//                val splitted = line.split( property.separator )
-                if ( splitted.size >= 2 ) {
-                    try {
-                        ( splitted( 0 ).toLong, new PointND(splitted.slice(3, 10).map(t => t.toDouble).toArray) )
-                    } catch {
-                        case e : Exception => ( -1L, PointND.NOT_VALID )
-                    }
-                } else {
-                    ( -1L, PointND.NOT_VALID )
-                }
-            } )
-
-        toReturnEdgeList.filter( t => t._2.size() > 0 )
-    }
-    
     def loadPointND( data : RDD[String], property : CCPropertiesImmutable, dimensionLimit : Int ) : RDD[( String, PointND )] =
     {
         val toReturnEdgeList : RDD[( String, PointND )] = data.map( line =>
@@ -257,22 +237,5 @@ class ENNLoader( args_ : Array[String] ) extends Serializable
         toReturnEdgeList.filter( t => !t._1.equals( "EMPTY" ) )
     }
     
-    def loadStringData(data : RDD[String], property : CCPropertiesImmutable ) : RDD[(String, String)] =
-    {
-        val toReturnEdgeList : RDD[(String, String)] = data.map(line =>
-            {
-                val splitted = line.split(property.separator)
-                if (/*splitted.size >= 1 &&*/ !splitted(0).trim.isEmpty) {
-                    try {
-                        (splitted( 0 ), splitted( config.columnDataA ))
-                    } catch {
-                        case e : Exception => ("EMPTY","EMPTY")
-                    }
-                } else {
-                    ("EMPTY","EMPTY")
-                }
-            })
-
-        toReturnEdgeList.filter(t => !t._1.equals("EMPTY"))
-    }
+    
 }

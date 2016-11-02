@@ -7,6 +7,7 @@ import knn.util.PointNDSparse
 import knn.util.PointNDBoolean
 import java.util.HashSet
 import scala.collection.JavaConversions._
+import knn.util.PointND
 
 object DatasetLoad {
   def loadBagOfWords( data : RDD[String], property : CCPropertiesImmutable , config : ENNConfig) : RDD[( Long, PointNDSparse )] =
@@ -82,5 +83,44 @@ object DatasetLoad {
             } )
 
         toReturnEdgeList.filter( t => !t._2.isEmpty )
+    }
+  
+  def loadHousehold( data : RDD[String], property : CCPropertiesImmutable ) : RDD[( Long, PointND )] =
+    {
+        val toReturnEdgeList : RDD[( Long, PointND )] = data.map( line =>
+            {
+                val splitted = line.split( ";" )
+//                val splitted = line.split( property.separator )
+                if ( splitted.size >= 2 ) {
+                    try {
+                        ( splitted( 0 ).toLong, new PointND(splitted.slice(3, 10).map(t => t.toDouble).toArray) )
+                    } catch {
+                        case e : Exception => ( -1L, PointND.NOT_VALID )
+                    }
+                } else {
+                    ( -1L, PointND.NOT_VALID )
+                }
+            } )
+
+        toReturnEdgeList.filter( t => t._2.size() > 0 )
+    }
+  
+  def loadStringData(data : RDD[String], property : CCPropertiesImmutable, config : ENNConfig ) : RDD[(String, String)] =
+    {
+        val toReturnEdgeList : RDD[(String, String)] = data.map(line =>
+            {
+                val splitted = line.split(property.separator)
+                if (/*splitted.size >= 1 &&*/ !splitted(0).trim.isEmpty) {
+                    try {
+                        (splitted( 0 ), splitted( config.columnDataA ))
+                    } catch {
+                        case e : Exception => ("EMPTY","EMPTY")
+                    }
+                } else {
+                    ("EMPTY","EMPTY")
+                }
+            })
+
+        toReturnEdgeList.filter(t => !t._1.equals("EMPTY"))
     }
 }

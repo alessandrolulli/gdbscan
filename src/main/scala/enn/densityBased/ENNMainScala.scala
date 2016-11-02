@@ -40,5 +40,10 @@ object ENNMainScala {
             {
               crackerDensity.CrackerAllComparable.mainGO(ennLoader.config.property.outputFile, args_)
             }
+            
+            if(!ennLoader.config.skipInternalEvaluation)
+            {
+              stats.ClusteringInternalEvaluation.main(args_)
+            }
         }
 }
