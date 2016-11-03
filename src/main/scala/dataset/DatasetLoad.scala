@@ -123,4 +123,23 @@ object DatasetLoad {
 
         toReturnEdgeList.filter(t => !t._1.equals("EMPTY"))
     }
+
+  def loadPointND( data : RDD[String], property : CCPropertiesImmutable, dimensionLimit : Int, config : ENNConfig ) : RDD[( String, PointND )] =
+  {
+    val toReturnEdgeList : RDD[( String, PointND )] = data.map( line =>
+    {
+      val splitted = line.split( property.separator )
+      if (!splitted( 0 ).trim.isEmpty ) {
+        try {
+          ( splitted( 0 ), new PointND(splitted(config.columnDataA).split(" ").slice(0, dimensionLimit).map(x => x.toDouble) ))
+        } catch {
+          case e : Exception => ( "EMPTY", PointND.NOT_VALID )
+        }
+      } else {
+        ( "EMPTY", PointND.NOT_VALID )
+      }
+    } )
+
+    toReturnEdgeList.filter( t => t._2.size() > 0 )
+  }
 }

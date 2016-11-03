@@ -83,7 +83,7 @@ public class BruteForce<TID, t, TN extends INode<TID, t>> extends GraphBuilder<T
 
                 count++;
                 sum += sim;
-                stat.addValue(1 - sim);
+                stat.addValue(sim);
 
                 neighborlists.get(n1).add(new Neighbor<TID, t, TN>(n2, sim));
                 neighborlists.get(n2).add(new Neighbor<TID, t, TN>(n1, sim));

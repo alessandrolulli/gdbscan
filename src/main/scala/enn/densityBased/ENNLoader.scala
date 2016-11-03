@@ -79,15 +79,27 @@ class ENNLoader( args_ : Array[String] ) extends Serializable
                 }
                 case "PointND" =>
                 {
-                    val vertexRDD = loadPointND( file , config.property, config.dimensionLimit)
-                    val metric = new EuclidianDistanceND[Long, PointND, NodeGeneric[Long, PointND]]
-//                    val nodeManager = new ENNNodeManagerValueOnMapLong[Point2D](sc)
-                    val nodeManager = new ENNNodeManagerValueOnNodeLong[PointND](sc)
-                    nodeManager.init(vertexRDD.map(t => (t._1.toLong, t._2)))
+                  val vertexRDD = DatasetLoad.loadPointND( file , config.property, config.dimensionLimit, config)
+                  val metric = new EuclidianDistanceND[Long, PointND, NodeGeneric[Long, PointND]]
+                  //                    val nodeManager = new ENNNodeManagerValueOnMapLong[Point2D](sc)
+                  val nodeManager = new ENNNodeManagerValueOnNodeLong[PointND](sc)
+                  nodeManager.init(vertexRDD.map(t => (t._1.toLong, t._2)))
 
-                    val ennRunner = getENNRunnerLongID[PointND, NodeGeneric[Long, PointND]](nodeManager)
+                  val ennRunner = getENNRunnerLongID[PointND, NodeGeneric[Long, PointND]](nodeManager)
 
-                    ennRunner.run(metric, vertexRDD.map(t => nodeManager.createNode(t._1.toLong, t._2)))
+                  ennRunner.run(metric, vertexRDD.map(t => nodeManager.createNode(t._1.toLong, t._2)))
+                }
+                case "PointNDMAP" =>
+                {
+                  val vertexRDD = DatasetLoad.loadPointND( file , config.property, config.dimensionLimit)
+                  val metric = new EuclidianDistanceND[Long, PointND, NodeSimple[Long, PointND]]
+                  val nodeManager = new ENNNodeManagerValueOnMapLong[PointND](sc)
+                  //val nodeManager = new ENNNodeManagerValueOnNodeLong[PointND](sc)
+                  nodeManager.init(vertexRDD.map(t => (t._1.toLong, t._2)))
+
+                  val ennRunner = getENNRunnerLongID[PointND, NodeSimple[Long, PointND]](nodeManager)
+
+                  ennRunner.run(metric, vertexRDD.map(t => nodeManager.createNode(t._1.toLong, t._2)))
                 }
                 case "Transaction" =>
                 {
@@ -197,25 +209,6 @@ class ENNLoader( args_ : Array[String] ) extends Serializable
     def getENNRunnerLongID[T : ClassTag, TN <: INode[Long, T] : ClassTag](nodeManager : ENNNodeManager[Long, T, TN]) =
     {
         new ENNRunnerLongID[T, TN](printer, config, nodeManager, sc)
-    }
-    
-    def loadPointND( data : RDD[String], property : CCPropertiesImmutable, dimensionLimit : Int ) : RDD[( String, PointND )] =
-    {
-        val toReturnEdgeList : RDD[( String, PointND )] = data.map( line =>
-            {
-                val splitted = line.split( property.separator )
-                if (!splitted( 0 ).trim.isEmpty ) {
-                    try {
-                        ( splitted( 0 ), new PointND(splitted(config.columnDataA).split(" ").slice(0, dimensionLimit).map(x => x.toDouble) ))
-                    } catch {
-                        case e : Exception => ( "EMPTY", PointND.NOT_VALID )
-                    }
-                } else {
-                    ( "EMPTY", PointND.NOT_VALID )
-                }
-            } )
-
-        toReturnEdgeList.filter( t => t._2.size() > 0 )
     }
     
     def loadPoint2D( data : RDD[String], property : CCPropertiesImmutable ) : RDD[( String, Point2D )] =
