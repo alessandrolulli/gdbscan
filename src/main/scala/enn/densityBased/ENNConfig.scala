@@ -27,13 +27,22 @@ class ENNConfig( args_ : Array[String], appName : String = "ENN" ) extends Seria
     val randomRestart = propertyLoad.getInt( "randomRestart", 5 );
     val printStep = propertyLoad.getInt( "printStep", 1 );
 
+    val (groundtruth, groundtruthAvailable) : (String, Boolean) = propertyLoad.get("groundtruth", "NO") match
+    {
+        case "NO" => ("NO", false)
+        case "SAME" => (property.dataset, true)
+        case default => (default, true)
+    }
+
     val ennSkip = propertyLoad.getBoolean( "ennSkip", false );
     val knnSkip = propertyLoad.getBoolean( "knnSkip", false );
     val clusterSkip = propertyLoad.getBoolean( "clusterSkip", false );
     val internalEvaluationSkip = propertyLoad.getBoolean( "internalEvaluationSkip", false );
+    val externalEvaluationSkip = propertyLoad.getBoolean( "externalEvaluationSkip", false ) || !groundtruthAvailable;
     val skipENN = ennSkip;
     val skipCluster = clusterSkip;
     val skipInternalEvaluation = internalEvaluationSkip;
+    val skipExternalEvaluation = externalEvaluationSkip;
     
     val clusterMinSize = propertyLoad.getInt( "clusterMinSize", 100 );
     val printOutput = propertyLoad.getBoolean( "printOutput", true );

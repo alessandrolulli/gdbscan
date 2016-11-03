@@ -1,13 +1,13 @@
 package dataset
 
-import util.CCPropertiesImmutable
-import org.apache.spark.rdd.RDD
-import enn.densityBased.ENNConfig
-import knn.util.PointNDSparse
-import knn.util.PointNDBoolean
 import java.util.HashSet
+
+import enn.densityBased.ENNConfig
+import knn.util.{PointND, PointNDBoolean, PointNDSparse}
+import org.apache.spark.rdd.RDD
+import util.CCPropertiesImmutable
+
 import scala.collection.JavaConversions._
-import knn.util.PointND
 
 object DatasetLoad {
   def loadBagOfWords( data : RDD[String], property : CCPropertiesImmutable , config : ENNConfig) : RDD[( Long, PointNDSparse )] =
@@ -141,5 +141,22 @@ object DatasetLoad {
     } )
 
     toReturnEdgeList.filter( t => t._2.size() > 0 )
+  }
+
+  def loadCluster(data: RDD[String], split : String = "\t"): RDD[(Long, Long)] = {
+    val toReturn : RDD[(Long, Long)] = data.map(line => {
+      val splitted = line.split(split)
+      if (splitted.size > 1) {
+        try {
+        (splitted(0).toLong, splitted(1).toLong)
+        } catch {
+          case e : Exception => (-1, -1)
+        }
+      } else {
+        (-1, -1)
+      }
+    })
+
+    toReturn.filter(t => t._1 != -1)
   }
 }

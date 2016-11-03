@@ -91,7 +91,7 @@ class ENNLoader( args_ : Array[String] ) extends Serializable
                 }
                 case "PointNDMAP" =>
                 {
-                  val vertexRDD = DatasetLoad.loadPointND( file , config.property, config.dimensionLimit)
+                  val vertexRDD = DatasetLoad.loadPointND( file , config.property, config.dimensionLimit, config)
                   val metric = new EuclidianDistanceND[Long, PointND, NodeSimple[Long, PointND]]
                   val nodeManager = new ENNNodeManagerValueOnMapLong[PointND](sc)
                   //val nodeManager = new ENNNodeManagerValueOnNodeLong[PointND](sc)

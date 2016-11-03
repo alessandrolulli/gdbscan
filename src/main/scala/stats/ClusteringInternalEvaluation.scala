@@ -31,19 +31,6 @@ import knn.metric.impl.EuclidianDistanceND
 
 object ClusteringInternalEvaluation {
 
-  def loadCluster(data: RDD[String]): RDD[(Long, Long)] = {
-    val toReturn = data.map(line => {
-      val splitted = line.split("\t")
-      if (splitted.size > 1) {
-        (splitted(0).toLong, splitted(1).toLong)
-      } else {
-        throw new FileNotFoundException("impossible to parse: " + line)
-      }
-    })
-
-    toReturn
-  }
-
   def separationLoop[TID: ClassTag, T: ClassTag, TN <: INode[TID, T] : ClassTag](
                                                                               similarity: IMetric[TID, T, TN],
                                                                               rddCC: RDD[(TID, TID)],
@@ -53,9 +40,10 @@ object ClusteringInternalEvaluation {
       .map(t => (t._2._1, t._2._2))
       .groupByKey
       .map(t => (Random.shuffle(t._2.toList).head, t._2.size)).cache
-    rddJoined.count
+    val size = rddJoined.count
 
-    val forBruteForce = rddJoined.map(t => t._1).collect.toList
+    val sampleSize = Math.min(1.0, 2000.0 / size)
+    val forBruteForce = rddJoined.map(t => t._1).sample(false, sampleSize, System.currentTimeMillis()).collect.toList
 
     val brute = new BruteForce[TID, T, TN]();
     brute.setK(5);
@@ -158,7 +146,7 @@ object ClusteringInternalEvaluation {
     val sc = config.util.getSparkContext();
 
     val file = sc.textFile(config.property.dataset, config.property.sparkPartition).cache
-    val cluster = loadCluster(sc.textFile(config.property.outputFile + "_CLUSTERING", config.property.sparkPartition)).cache
+    val cluster = DatasetLoad.loadCluster(sc.textFile(config.property.outputFile + "_CLUSTERING", config.property.sparkPartition)).cache
 
     val dataSize = file.count
     val clusteredDataSize = cluster.count
