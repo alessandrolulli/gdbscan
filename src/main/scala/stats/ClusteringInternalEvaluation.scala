@@ -1,6 +1,7 @@
 package stats
 
 import java.io.FileNotFoundException
+
 import scala.collection.JavaConversions._
 import scala.collection.JavaConverters.seqAsJavaListConverter
 import scala.collection.mutable.MultiMap
@@ -11,23 +12,21 @@ import knn.util.Point2D
 import knn.util.PointND
 import com.google.common.base.Joiner
 import java.io.FileWriter
+
 import org.apache.spark.SparkContext
 import dataset.DatasetLoad
-import knn.metric.impl.JaroWinkler
+import knn.metric.impl._
 import enn.densityBased.ENNConfig
 import knn.graph.impl.Node
 import knn.graph.INode
 import knn.metric.IMetric
 import knn.graph.generation.BruteForce
+
 import scala.reflect.ClassTag
 import org.apache.spark.SparkContext.doubleRDDToDoubleRDDFunctions
 import knn.util.PointNDSparse
 import knn.graph.impl.NodeGeneric
-import knn.metric.impl.CosineSimilarityNDSparse
-import knn.metric.impl.JaccardSimilaritySet
-import knn.metric.impl.SimpsonScore
 import knn.util.PointNDBoolean
-import knn.metric.impl.EuclidianDistanceND
 
 object ClusteringInternalEvaluation {
 
@@ -197,7 +196,7 @@ object ClusteringInternalEvaluation {
       case "Household" | "HouseholdMAP" => {
         val vertexRDD = DatasetLoad.loadHousehold(file, config.property).map(t => (t._1, new NodeGeneric(t._1, t._2)))
         val metric: IMetric[Long, PointND, NodeGeneric[Long, PointND]] =
-          new EuclidianDistanceND[Long, PointND, NodeGeneric[Long, PointND]]
+          new EuclidianSimilarityND[Long, PointND, NodeGeneric[Long, PointND]]
 
         val (separationValue, compactnessValue) = computeInternalEvaluation[Long, PointND, NodeGeneric[Long, PointND]](metric, cluster, vertexRDD, sc, config)
         printOutput(separationValue, compactnessValue)
