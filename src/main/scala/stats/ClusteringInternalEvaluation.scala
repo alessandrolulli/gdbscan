@@ -153,6 +153,7 @@ object ClusteringInternalEvaluation {
     val clusterNumber = clusterInfo.count
     val clusterMaxSize = clusterInfo.map(t => t._2).max
 
+    // dataset, epsilon, core, sizeData, sizeDataClustered, clusterNumber, clusterMaxSize, separation, separationWeight, compactness, compactnessWeight
     def printOutput(separationValue : (Double, Double), compactnessValue : (Double, Double)) = {
       config.util.io.printData("internalEvaluation.txt",
         config.property.dataset,

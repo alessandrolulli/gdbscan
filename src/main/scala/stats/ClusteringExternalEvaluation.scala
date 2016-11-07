@@ -87,7 +87,7 @@ object ClusteringExternalEvaluation {
       (TP, FN)
     }).reduce((a,b) => (a._1 + b._1, a._2 + b._2))
 
-    val joinedFP = rddGroundSampled.leftOuterJoin(rddChecked).map(t => (t._2._1, t._2._2)).groupByKey.map(t => {
+    val joinedFP = rddCheckedSampled.leftOuterJoin(rddGround).map(t => (t._2._1, t._2._2)).groupByKey.map(t => {
 
       val array = t._2.toArray
 
