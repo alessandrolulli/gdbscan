@@ -4,21 +4,14 @@ import java.util.HashSet
 
 import scala.collection.JavaConversions._
 import scala.reflect.ClassTag
-
 import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.rdd.RDD
-
 import dataset.DatasetLoad
 import knn.graph.INode
 import knn.graph.impl.NodeGeneric
 import knn.graph.impl.NodeSimple
 import knn.metric.IMetric
-import knn.metric.impl.CosineSimilarityNDSparse
-import knn.metric.impl.EuclidianDistance2D
-import knn.metric.impl.EuclidianDistanceND
-import knn.metric.impl.JaccardSimilaritySet
-import knn.metric.impl.JaroWinkler
-import knn.metric.impl.SimpsonScore
+import knn.metric.impl._
 import knn.util.Point2D
 import knn.util.PointND
 import knn.util.PointNDBoolean
@@ -129,7 +122,7 @@ class ENNLoader( args_ : Array[String] ) extends Serializable
                 {
                     val vertexRDD = DatasetLoad.loadHousehold( file , config.property)
                     val metric : IMetric[Long, PointND, NodeGeneric[Long, PointND]] = 
-                      new EuclidianDistanceND[Long, PointND, NodeGeneric[Long, PointND]]
+                      new EuclidianSimilarityND[Long, PointND, NodeGeneric[Long, PointND]]
                     val nodeManager = new ENNNodeManagerValueOnNodeLong[PointND](sc)
                     nodeManager.init(vertexRDD)
                     
@@ -141,7 +134,7 @@ class ENNLoader( args_ : Array[String] ) extends Serializable
                 {
                     val vertexRDD = DatasetLoad.loadHousehold( file , config.property)
                     val metric : IMetric[Long, PointND, NodeSimple[Long, PointND]] = 
-                      new EuclidianDistanceND[Long, PointND, NodeSimple[Long, PointND]]
+                      new EuclidianSimilarityND[Long, PointND, NodeSimple[Long, PointND]]
                     val nodeManager = new ENNNodeManagerValueOnMapLong[PointND](sc)
                     nodeManager.init(vertexRDD)
                     
