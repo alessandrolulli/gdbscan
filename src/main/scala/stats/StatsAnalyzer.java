@@ -55,11 +55,17 @@ public class StatsAnalyzer
             final LineNumberReader lnr = new LineNumberReader(fr);
             String line;
 
+            String index = "-1";
+            if(args_[1] != null)
+            {
+                index = args_[1];
+            }
+
             while ((line = lnr.readLine()) != null)
             {
                 String[] token = line.split(",");
 
-                if(token[0].equals("ENN") && token[3].equals("-1"))
+                if(token[0].equals("ENN") && token[3].equals(index))
                 {
                     DescriptiveStatistics stats = getStats(token[1], Double.parseDouble(token[12]));
 
