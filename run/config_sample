@@ -12,7 +12,6 @@ ennType PointND
 
 terminationActiveNodes 0.7
 terminationRemovedNodes 0.01
-performance true
 
 jarPath path-to-jar
 sparkMaster local[4]
@@ -22,13 +21,8 @@ edgelistSeparator \t
 edgelistSeparatorCC space
 customColumnValue DENSITY
 
-sparkPartition 64
 sparkExecutorInstances 1
 sparkExecutorMemory 5580m
-sparkShuffleConsolidateFiles false
-sparkShuffleManager SORT
-sparkCompressionCodec snappy
-sparkBlockManagerSlaveTimeoutMs 500000
 sparkCoresMax 4
 
 

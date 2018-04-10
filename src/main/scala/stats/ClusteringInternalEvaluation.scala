@@ -23,7 +23,6 @@ import knn.metric.IMetric
 import knn.graph.generation.BruteForce
 
 import scala.reflect.ClassTag
-import org.apache.spark.SparkContext.doubleRDDToDoubleRDDFunctions
 import knn.util.PointNDSparse
 import knn.graph.impl.NodeGeneric
 import knn.util.PointNDBoolean
