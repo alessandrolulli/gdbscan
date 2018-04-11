@@ -7,6 +7,7 @@ public class Main
 		if(args_.length > 0)
 		{
 			enn.densityBased.ENNMainScala.main(args_);
+			while(true);
 		} else
 		{
 			System.out.println("ERROR Command input must be: command configFile");

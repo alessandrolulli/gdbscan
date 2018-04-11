@@ -54,11 +54,13 @@ public class NeighborList<TID, T, TN extends INode<TID, T>> extends BoundedPrior
 
     public NeighborList<TID, T, TN> convertWithSize(int size_)
     {
-    	final NeighborList<TID, T, TN> toReturn = new NeighborList<TID, T, TN>(size_);
+        if(size_ < size()) {
+            final NeighborList<TID, T, TN> toReturn = new NeighborList<TID, T, TN>(size_);
 
-    	toReturn.addAll(this);
+            toReturn.addAll(this);
 
-    	return toReturn;
+            return toReturn;
+        } else return this;
     }
 
     public ArrayList<Neighbor<TID, T, TN>> convertToList()

@@ -32,6 +32,9 @@ class ENNRunnerLongID[T : ClassTag, TN <: INode[Long, T] : ClassTag] (_printer :
         val initKNN = initializeKNN(metric, vertexRDD, _nodeManager).persist(DEFAULT_STORAGE_LEVEL)
         val initENN = enn.initializeENN(vertexRDD).persist(DEFAULT_STORAGE_LEVEL)
 
+        initKNN.setName("STARTING KNN GRAPH")
+        initENN.setName("STARTING ENN GRAPH")
+
         initKNN.count
         initENN.count
         vertexRDD.unpersist()
