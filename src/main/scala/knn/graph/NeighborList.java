@@ -11,6 +11,7 @@ import java.util.List;
  * @author tibo
  */
 public class NeighborList<TID, T, TN extends INode<TID, T>> extends BoundedPriorityQueue<Neighbor<TID, T, TN>> implements Serializable {
+//    public class NeighborList<TID, T, TN extends INode<TID, T>> extends BoundedPriorityQueue<Neighbor<TID, T, TN>> implements Serializable {
 
 	private static final long serialVersionUID = 1969183297395875761L;
 

@@ -75,7 +75,6 @@ public class BoundedPriorityQueue<E> extends PriorityQueue<E> {
         }
         
         if (_comparator.compare(element, peek()) > 0)
-//        if (((Comparable) element).compareTo(this.peek()) > 0) 
         {
             this.poll();
             return super.add(element);

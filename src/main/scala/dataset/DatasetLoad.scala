@@ -12,19 +12,19 @@ import scala.collection.JavaConversions._
 object DatasetLoad {
   def loadBagOfWords( data : RDD[String], property : CCPropertiesImmutable , config : ENNConfig) : RDD[( Long, PointNDSparse )] =
     {
-        val toReturnEdgeList : RDD[( Long, (Int, Int))] = data.map( line =>
+        val toReturnEdgeList : RDD[( Long, (Int, Int))] = data.flatMap( line =>
             {
                 val splitted = line.split( " " )
                 if ( splitted.size >= 3 ) {
                     try {
-                        ( splitted( 0 ).toLong, (splitted(1).toInt, splitted(2).toInt) )
+                        Some( splitted( 0 ).toLong, (splitted(1).toInt, splitted(2).toInt) )
                     } catch {
-                        case e : Exception => ( -1L, (-1,-1) )
+                        case e : Exception => None
                     }
                 } else {
-                    ( -1L, (-1,-1) )
+                    None
                 }
-            } ).filter( t => t._1 > 0 )
+            } )
             
         val toReturn = toReturnEdgeList.groupByKey.map(t => 
           {
@@ -32,7 +32,7 @@ object DatasetLoad {
             val sorted = t._2.toList.sortWith(_._1 < _._1)
             val point = new PointNDSparse(size)
             
-            sorted.zipWithIndex.map(u => point.add(u._2, u._1._1, u._1._2))
+            sorted.zipWithIndex.foreach(u => point.add(u._2, u._1._1, u._1._2))
             
             (t._1, point)
           })
