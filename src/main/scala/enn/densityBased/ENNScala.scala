@@ -245,6 +245,7 @@ class ENNScala[TID: ClassTag, T: ClassTag, TN <: INode[TID, T] : ClassTag](@tran
       val nodeExludedNumber = nodeExcluded.value.size
 
       graphENN = graphENNPlusExclusion.map(t => (t._1, t._2._1)).persist(DEFAULT_STORAGE_LEVEL)
+//      val debugCheck = graphENN.collect()
       graphENN.setName("GRAPH-ENN: " + iteration)
       graphENN.count()
       previousGraphENN.unpersist()

@@ -51,7 +51,7 @@ class CCProperties(algorithmName: String, configurationFile: String) extends Ser
     val sparkCompressionCodec = get("sparkCompressionCodec", "lz4").toString
     val sparkShuffleConsolidateFiles = get("sparkShuffleConsolidateFiles", "false").toString
     val sparkDriverMaxResultSize = get("sparkDriverMaxResultSize", "1g").toString
-    var separator = get("edgelistSeparator", "space")
+    var separator = get("edgelistSeparator", get("separator", "space"))
     if (separator.equals("space")) separator = " "
     val printMessageStat = get("printMessageStat", "false").toBoolean
     val printLargestCC = get("printLargestCC", "false").toBoolean

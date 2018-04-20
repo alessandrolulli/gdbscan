@@ -189,20 +189,20 @@ class ENNLoader(args_ : Array[String]) extends Serializable {
   }
 
   def loadPoint2D(data: RDD[String], property: CCPropertiesImmutable): RDD[(String, Point2D)] = {
-    val toReturnEdgeList: RDD[(String, Point2D)] = data.map(line => {
+    val toReturnEdgeList: RDD[(String, Point2D)] = data.flatMap(line => {
       val splitted = line.split(property.separator)
       if ( /*splitted.size >= 3 &&*/ !splitted(0).trim.isEmpty) {
         try {
-          (splitted(0), new Point2D(splitted(config.columnDataA).toDouble, splitted(config.columnDataB).toDouble))
+          Some((splitted(0), new Point2D(splitted(config.columnDataA).toDouble, splitted(config.columnDataB).toDouble)))
         } catch {
-          case e: Exception => ("EMPTY", Point2D.NOT_VALID)
+          case e: Exception => None
         }
       } else {
-        ("EMPTY", Point2D.NOT_VALID)
+        None
       }
     })
 
-    toReturnEdgeList.filter(t => !t._1.equals("EMPTY"))
+    toReturnEdgeList
   }
 
 
