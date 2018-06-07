@@ -122,6 +122,7 @@ object ClusteringInternalEvaluation {
     val compactnessCount = kkk.count
     val compactness = compactnessSum / compactnessCount
 
+    // maybe it is not the best way to perform the weighted
     val weighted = kkk.map(t => (t._3, t._2)).reduce((a, b) => (a._1 + b._1, (a._1 * a._2 + b._1 * b._2)/(a._1 + b._1)))
 
     (compactness, weighted._2)
