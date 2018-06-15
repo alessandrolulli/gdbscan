@@ -115,10 +115,10 @@ object ClusteringExternalEvaluation {
     (recall, precision, (2*precision*recall) / (precision + recall))
   }
 
-  def main(args_ : Array[String]): Unit = {
+  def main(args_ : Array[String], sc: SparkContext): Unit = {
     // super ugly code! make it better!
     val config = new ENNConfig(args_, "CLUSTERING_EXTERNAL_EVALUATION")
-    val sc = config.util.getSparkContext();
+//    val sc = config.util.getSparkContext();
 
     val groundSplit = config.propertyLoad.get("ennType", "String") match {
       case "ImageBinary" | "ImageBinaryMAP" => ","

@@ -32,18 +32,18 @@ object ENNMainScala {
         ennLoader.config)
     }
 
-    ennLoader.stop
-
     if (!ennLoader.config.skipCluster) {
-      crackerDensity.CrackerAllComparable.mainGO(ennLoader.config.property.outputFile, args_)
+      crackerDensity.CrackerAllComparable.mainGO(ennLoader.config.property.outputFile, args_, ennLoader.sc)
     }
 
     if (!ennLoader.config.skipInternalEvaluation) {
-      stats.ClusteringInternalEvaluation.main(args_)
+      stats.ClusteringInternalEvaluation.main(args_, ennLoader.sc)
     }
 
     if (!ennLoader.config.skipExternalEvaluation) {
-      stats.ClusteringExternalEvaluation.main(args_)
+      stats.ClusteringExternalEvaluation.main(args_, ennLoader.sc)
     }
+
+    ennLoader.stop
   }
 }

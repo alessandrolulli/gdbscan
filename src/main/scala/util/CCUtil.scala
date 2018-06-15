@@ -18,7 +18,7 @@ class CCUtil(property: CCPropertiesImmutable) extends Serializable {
 
   def getSparkContext(): SparkContext = {
     val conf = new SparkConf()
-      .setMaster(property.sparkMaster)
+//      .setMaster(property.sparkMaster)
       .setAppName(property.appName)
       .set("spark.executor.memory", property.sparkExecutorMemory)
       .set("spark.storage.blockManagerSlaveTimeoutMs", property.sparkBlockManagerSlaveTimeoutMs)
@@ -48,32 +48,32 @@ class CCUtil(property: CCPropertiesImmutable) extends Serializable {
     spark
   }
 
-  def getJavaSparkContext(): JavaSparkContext = {
-    val conf = new SparkConf()
-      .setMaster(property.sparkMaster)
-      .setAppName(property.appName)
-      .set("spark.executor.memory", property.sparkExecutorMemory)
-      .set("spark.storage.blockManagerSlaveTimeoutMs", property.sparkBlockManagerSlaveTimeoutMs)
-      .set("spark.shuffle.manager", property.sparkShuffleManager)
-      .set("spark.shuffle.consolidateFiles", property.sparkShuffleConsolidateFiles)
-      .set("spark.io.compression.codec", property.sparkCompressionCodec)
-      .set("spark.akka.frameSize", property.sparkAkkaFrameSize)
-      .set("spark.driver.maxResultSize", property.sparkDriverMaxResultSize)
-      //				.set("spark.task.cpus", "8")
-      .setJars(Array(property.jarPath))
-
-    if (property.sparkCoresMax > 0)
-      conf.set("spark.cores.max", property.sparkCoresMax.toString)
-
-    if (property.sparkExecutorInstances > 0)
-      conf.set("spark.executor.instances", property.sparkExecutorInstances.toString)
-
-    val spark = new SparkContext(conf)
-
-    //			spark.setCheckpointDir(".")
-
-    spark
-  }
+//  def getJavaSparkContext(): JavaSparkContext = {
+//    val conf = new SparkConf()
+//      .setMaster(property.sparkMaster)
+//      .setAppName(property.appName)
+//      .set("spark.executor.memory", property.sparkExecutorMemory)
+//      .set("spark.storage.blockManagerSlaveTimeoutMs", property.sparkBlockManagerSlaveTimeoutMs)
+//      .set("spark.shuffle.manager", property.sparkShuffleManager)
+//      .set("spark.shuffle.consolidateFiles", property.sparkShuffleConsolidateFiles)
+//      .set("spark.io.compression.codec", property.sparkCompressionCodec)
+//      .set("spark.akka.frameSize", property.sparkAkkaFrameSize)
+//      .set("spark.driver.maxResultSize", property.sparkDriverMaxResultSize)
+//      //				.set("spark.task.cpus", "8")
+//      .setJars(Array(property.jarPath))
+//
+//    if (property.sparkCoresMax > 0)
+//      conf.set("spark.cores.max", property.sparkCoresMax.toString)
+//
+//    if (property.sparkExecutorInstances > 0)
+//      conf.set("spark.executor.instances", property.sparkExecutorInstances.toString)
+//
+//    val spark = new SparkContext(conf)
+//
+//    //			spark.setCheckpointDir(".")
+//
+//    spark
+//  }
 
   // return edgelist and edge associated to each vertex
   def loadEdgeFromFile(data: RDD[String]): (RDD[(Long, Long)], RDD[(Long, Iterable[Long])]) = {

@@ -14,7 +14,7 @@ import org.apache.spark.storage.StorageLevel
 
 object CrackerAllComparable {
 
-  def mainGO(ennGraph: String, args: Array[String]): Unit =
+  def mainGO(ennGraph: String, args: Array[String], spark: SparkContext): Unit =
     {
       val DEFAULT_STORAGE_LEVEL = StorageLevel.MEMORY_AND_DISK
       val timeBegin = System.currentTimeMillis()
@@ -34,7 +34,7 @@ object CrackerAllComparable {
       val cracker = new CrackerAlgorithm(property)
 
       val util = new CCUtil(property)
-      val spark = util.getSparkContext()
+//      val spark = util.getSparkContext()
 
       val timeSparkLoaded = System.currentTimeMillis()
       val file = spark.textFile(ennGraph, property.sparkPartition)
@@ -138,7 +138,7 @@ object CrackerAllComparable {
         toPrint.coalesce(1, true).saveAsTextFile(property.outputFile + "_CLUSTERING")
       }
 
-      spark.stop
+//      spark.stop
 
     }
 }

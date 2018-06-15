@@ -3,7 +3,7 @@ package dataset
 import java.util.HashSet
 
 import enn.densityBased.ENNConfig
-import knn.util.{PointND, PointNDBoolean, PointNDSparse}
+import knn.util.{Point2D, PointND, PointNDBoolean, PointNDSparse}
 import org.apache.spark.rdd.RDD
 import util.CCPropertiesImmutable
 
@@ -106,6 +106,23 @@ object DatasetLoad {
     })
 
     toReturnEdgeList.filter(t => !t._1.equals("EMPTY"))
+  }
+
+  def loadPoint2D(data: RDD[String], property: CCPropertiesImmutable, config: ENNConfig): RDD[(String, Point2D)] = {
+    val toReturnEdgeList: RDD[(String, Point2D)] = data.flatMap(line => {
+      val splitted = line.split(property.separator)
+      if ( /*splitted.size >= 3 &&*/ !splitted(0).trim.isEmpty) {
+        try {
+          Some((splitted(0), new Point2D(splitted(config.columnDataA).toDouble, splitted(config.columnDataB).toDouble)))
+        } catch {
+          case e: Exception => None
+        }
+      } else {
+        None
+      }
+    })
+
+    toReturnEdgeList
   }
 
   def loadPointND(data: RDD[String], property: CCPropertiesImmutable, dimensionLimit: Int, config: ENNConfig): RDD[(String, PointND)] = {

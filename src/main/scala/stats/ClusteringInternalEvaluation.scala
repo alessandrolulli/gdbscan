@@ -17,14 +17,13 @@ import org.apache.spark.SparkContext
 import dataset.DatasetLoad
 import knn.metric.impl._
 import enn.densityBased.ENNConfig
-import knn.graph.impl.Node
+import knn.graph.impl.{Node, NodeGeneric, NodeSimple}
 import knn.graph.INode
 import knn.metric.IMetric
 import knn.graph.generation.BruteForce
 
 import scala.reflect.ClassTag
 import knn.util.PointNDSparse
-import knn.graph.impl.NodeGeneric
 import knn.util.PointNDBoolean
 
 object ClusteringInternalEvaluation {
@@ -139,10 +138,10 @@ object ClusteringInternalEvaluation {
     (separationValue, compactnessValue)
   }
 
-  def main(args_ : Array[String]): Unit = {
+  def main(args_ : Array[String], sc: SparkContext): Unit = {
     // super ugly code! make it better!
     val config = new ENNConfig(args_, "CLUSTERING_INTERNAL_EVALUATION")
-    val sc = config.util.getSparkContext();
+//    val sc = config.util.getSparkContext();
 
     val file = sc.textFile(config.property.dataset, config.property.sparkPartition).cache
     val cluster = DatasetLoad.loadCluster(sc.textFile(config.property.outputFile + "_CLUSTERING", config.property.sparkPartition)).cache
@@ -200,6 +199,13 @@ object ClusteringInternalEvaluation {
           new EuclidianSimilarityND[Long, PointND, NodeGeneric[Long, PointND]]
 
         val (separationValue, compactnessValue) = computeInternalEvaluation[Long, PointND, NodeGeneric[Long, PointND]](metric, cluster, vertexRDD, sc, config)
+        printOutput(separationValue, compactnessValue)
+      }
+      case "Point2D" | "Point2DMAP" => {
+        val vertexRDD = DatasetLoad.loadPoint2D(file, config.property, config).map(t => (t._1.toLong, t._2)).map(t => (t._1, new NodeGeneric(t._1, t._2)))
+        val metric = new EuclidianDistance2D[Long, NodeGeneric[Long, Point2D]]
+
+        val (separationValue, compactnessValue) = computeInternalEvaluation[Long, Point2D, NodeGeneric[Long, Point2D]](metric, cluster, vertexRDD, sc, config)
         printOutput(separationValue, compactnessValue)
       }
       case "String" | "StringMAP" => {
