@@ -32,7 +32,7 @@ public class EuclidianDistance2D<TID, TN extends INode<TID, Point2D>> implements
 	@Override
 	public double similarity(Point2D a_, Point2D b_)
 	{
-		return 1 - compare(a_, b_);
+		return 1 / (1 + compare(a_, b_));
 	}
 
 }

@@ -41,7 +41,7 @@ class CCProperties(algorithmName: String, configurationFile: String) extends Ser
     val dataset = get("dataset", "")
     val dataset2 = get("dataset2", "")
     val jarPath = get("jarPath", "")
-    val sparkMaster = get("sparkMaster", "local[2]")
+    val sparkMaster = get("sparkMaster", "")
     val sparkExecutorMemory = get("sparkExecutorMemory", "14g")
     val sparkCoresMax = get("sparkCoresMax", "-1").toInt
     val sparkPartition = getInt("sparkPartition", Math.max(sparkCoresMax * 4, sparkExecutorInstances * 4))

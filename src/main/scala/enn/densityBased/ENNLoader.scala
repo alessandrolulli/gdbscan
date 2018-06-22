@@ -57,6 +57,17 @@ class ENNLoader(args_ : Array[String]) extends Serializable {
       }
       case "Point2D" => {
         val vertexRDD = DatasetLoad.loadPoint2D(file, config.property, config)
+        val metric = new EuclidianDistance2D[Long, NodeGeneric[Long, Point2D]]
+        //                    val nodeManager = new ENNNodeManagerValueOnMapLong[Point2D](sc)
+        val nodeManager = new ENNNodeManagerValueOnNodeLong[Point2D](sc)
+        nodeManager.init(vertexRDD.map(t => (t._1.toLong, t._2)))
+
+        val ennRunner = getENNRunnerLongID[Point2D, NodeGeneric[Long, Point2D]](nodeManager)
+
+        ennRunner.run(metric, vertexRDD.map(t => nodeManager.createNode(t._1.toLong, t._2)))
+      }
+      case "Point2DMAP" => {
+        val vertexRDD = DatasetLoad.loadPoint2D(file, config.property, config)
         val metric = new EuclidianDistance2D[Long, NodeSimple[Long, Point2D]]
         //                    val nodeManager = new ENNNodeManagerValueOnMapLong[Point2D](sc)
         val nodeManager = new ENNNodeManagerValueOnMapLong[Point2D](sc)

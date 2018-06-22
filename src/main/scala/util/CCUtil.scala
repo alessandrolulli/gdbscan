@@ -18,7 +18,6 @@ class CCUtil(property: CCPropertiesImmutable) extends Serializable {
 
   def getSparkContext(): SparkContext = {
     val conf = new SparkConf()
-//      .setMaster(property.sparkMaster)
       .setAppName(property.appName)
       .set("spark.executor.memory", property.sparkExecutorMemory)
       .set("spark.storage.blockManagerSlaveTimeoutMs", property.sparkBlockManagerSlaveTimeoutMs)
@@ -28,7 +27,11 @@ class CCUtil(property: CCPropertiesImmutable) extends Serializable {
       .set("spark.akka.frameSize", property.sparkAkkaFrameSize)
       .set("spark.driver.maxResultSize", property.sparkDriverMaxResultSize)
       .set("spark.core.connection.ack.wait.timeout", 600.toString)
+      .set("spark.rpc.askTimeout", 600.toString)
     //				.set("spark.task.cpus", "8")
+
+    if(property.sparkMaster.startsWith("local"))
+      conf.setMaster(property.sparkMaster)
 
     if (property.jarPath.endsWith(".jar"))
       conf.setJars(Array(property.jarPath))
