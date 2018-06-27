@@ -1,3 +1,21 @@
+/*
+ * Copyright (C) 2011-2012 the original author or authors.
+ * See the LICENCE.txt file distributed with this work for additional
+ * information regarding copyright ownership.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package knn.graph;
 
 import java.io.Serializable;
@@ -12,13 +30,6 @@ public class Neighbor<TID, T, TN extends INode<TID, T>> implements Comparable<T>
 	private static final long serialVersionUID = 1L;
 	public TN node;
     public double similarity;
-
-    public boolean is_new = true; // only used by sequential nndescent...
-
-
-//    public Neighbor() {
-//        node = new Node<T>();
-//    }
 
     public Neighbor(TN node, double similarity) {
         this.node = node;
@@ -37,11 +48,8 @@ public class Neighbor<TID, T, TN extends INode<TID, T>> implements Comparable<T>
 
     @Override
     public boolean equals(Object other) {
-        if (!other.getClass().getName().equals(this.getClass().getName())) {
-            return false;
-        }
+        if(!(other instanceof Neighbor)) return false;
 
-        @SuppressWarnings("unchecked")
 		final Neighbor<TID,T,TN> other_neighbor = (Neighbor<TID,T,TN>) other;
         return this.node.equals(other_neighbor.node);
     }
@@ -55,9 +63,7 @@ public class Neighbor<TID, T, TN extends INode<TID, T>> implements Comparable<T>
 
     @Override
     public int compareTo(Object other) {
-        if (! other.getClass().isInstance(this)) {
-            throw new InvalidParameterException();
-        }
+        if(!(other instanceof Neighbor)) throw new InvalidParameterException();
 
         if (((Neighbor) other).node.equals(this.node)) {
             return 0;

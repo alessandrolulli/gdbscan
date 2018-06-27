@@ -1,16 +1,27 @@
+/*
+ * Copyright (C) 2011-2012 the original author or authors.
+ * See the LICENCE.txt file distributed with this work for additional
+ * information regarding copyright ownership.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package crackerDensity
 
-import scala.Array.canBuildFrom
 import org.apache.spark.SparkContext
-import org.apache.spark.SparkContext._
 import org.apache.spark.rdd.RDD
-import util.CCProperties
-import util.CCUtil
-import util.CCPropertiesImmutable
-import java.io.PrintWriter
-import java.io.File
-import java.io.FileWriter
 import org.apache.spark.storage.StorageLevel
+import util.{CCProperties, CCUtil}
 
 object CrackerAllComparable {
 
@@ -59,6 +70,8 @@ object CrackerAllComparable {
           //				step < 10 && step % 3 == 0
         }
 
+      var retPrev : RDD[(Long, CrackerTreeMessageIdentification)] = null
+
       while (!control) {
         // simplification step
         val timeStepStart = System.currentTimeMillis()
@@ -66,8 +79,11 @@ object CrackerAllComparable {
         ret = ret.flatMap(item => cracker.emitBlue(item, property.coreThreshold))
 
         ret = ret.reduceByKey(cracker.reduceBlue).persist(DEFAULT_STORAGE_LEVEL)
+        ret.setName("CRACKER: "+step)
 
         val active = ret.count
+        if(retPrev != null) retPrev.unpersist()
+        retPrev = ret
         control = active <= 0
 
         val timeStepBlue = System.currentTimeMillis()
@@ -105,6 +121,7 @@ object CrackerAllComparable {
       }
 
       var treeRDDPropagation = treeRDDPropagationTmp.reduceByKey(cracker.reducePrepareDataForPropagation).map(t => (t._1, t._2.getMessagePropagation(t._1))).persist(DEFAULT_STORAGE_LEVEL)
+      var previousTree :RDD[(Long, CrackerTreeMessagePropagation)] = treeRDDPropagation
       //            .filter(t => !t._2.min.isDefined || (t._2.min.isDefined && !t._2.child.isEmpty))
       control = false
       while (!control) {
@@ -113,6 +130,9 @@ object CrackerAllComparable {
 
         treeRDDPropagation = treeRDDPropagation.reduceByKey(cracker.reducePropagate).persist(DEFAULT_STORAGE_LEVEL)
         control = treeRDDPropagation.map(t => t._2.min.isDefined).reduce { case (a, b) => a && b }
+
+        if(previousTree != null) previousTree.unpersist()
+        previousTree = treeRDDPropagation
 
         step = step + 1
         val timeStepBlue = System.currentTimeMillis()

@@ -1,33 +1,48 @@
+/*
+ * Copyright (C) 2011-2012 the original author or authors.
+ * See the LICENCE.txt file distributed with this work for additional
+ * information regarding copyright ownership.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package enn.densityBased
 
-import scala.reflect.ClassTag
+import knn.graph.{Neighbor, NeighborList}
+import knn.graph.impl.NodeSimple
+import knn.metric.IMetric
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
-import knn.graph.NeighborList
-import java.util.Random
-import knn.graph.Neighbor
-import knn.metric.IMetric
-import knn.graph.impl.NodeSimple
 
-class ENNNodeManagerValueOnMapLong[T : ClassTag](@transient val scHere : SparkContext) extends ENNNodeManagerValueOnMap[Long, T](scHere) {
+import scala.reflect.ClassTag
 
-    def initKNN(vertexRDD : RDD[NodeSimple[Long, T]], metric : IMetric[Long, T, NodeSimple[Long, T]], _config : ENNConfig) : RDD[(NodeSimple[Long, T], NeighborList[Long, T, NodeSimple[Long, T]])] =
-        {
-            val count = vertexRDD.count
-            val neighborListFactory = metric.getNeighborListFactory
+class ENNNodeManagerValueOnMapLong[T: ClassTag](@transient val scHere: SparkContext) extends ENNNodeManagerValueOnMap[Long, T](scHere) {
 
-            vertexRDD.map(t => (t,
-                {
-                    val neighborKNN = neighborListFactory.create(_config.k)
+  def initKNN(vertexRDD: RDD[NodeSimple[Long, T]], metric: IMetric[Long, T, NodeSimple[Long, T]], _config: ENNConfig)
+  : RDD[(NodeSimple[Long, T], NeighborList[Long, T, NodeSimple[Long, T]])] = {
+    val count = vertexRDD.count
+    val neighborListFactory = metric.getNeighborListFactory
 
-                    _config.initPolicy.generateKId(t.getId, count).map(u =>
-                        {
-                            neighborKNN.add(new Neighbor[Long, T, NodeSimple[Long, T]](
-                                createNode(u), Double.MaxValue))
-                        }
-                    )
+    vertexRDD.map(t => (t, {
+      val neighborKNN = neighborListFactory.create(_config.k)
 
-                    neighborKNN
-                }))
-        }
+      _config.initPolicy.generateKId(t.getId, count).map(u => {
+        neighborKNN.add(new Neighbor[Long, T, NodeSimple[Long, T]](
+          createNode(u), Double.MaxValue))
+      }
+      )
+
+      neighborKNN
+    }))
+  }
 }

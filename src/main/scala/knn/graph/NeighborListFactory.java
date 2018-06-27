@@ -1,27 +1,45 @@
+/*
+ * Copyright (C) 2011-2012 the original author or authors.
+ * See the LICENCE.txt file distributed with this work for additional
+ * information regarding copyright ownership.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package knn.graph;
 
 import java.io.Serializable;
 import java.util.Comparator;
 
-public class NeighborListFactory<TID, T, TN extends INode<TID, T>> implements Serializable
+public class NeighborListFactory<I, T, N extends INode<I, T>> implements Serializable
 {
 	private static final long serialVersionUID = 3637625262337648884L;
 
-	private final Comparator<Neighbor<TID, T, TN>> _comparator;
+	private final Comparator<Neighbor<I, T, N>> _comparator;
 
 	public NeighborListFactory()
 	{
-		_comparator = new NeighborListComparatorDESC<TID, T, TN>();
+		_comparator = new NeighborListComparatorDESC<I, T, N>();
 	}
 
-	public NeighborListFactory(Comparator<Neighbor<TID, T, TN>> comparator_)
+	public NeighborListFactory(Comparator<Neighbor<I, T, N>> comparator_)
 	{
 		_comparator = comparator_;
 	}
 
-	public NeighborList<TID, T, TN> create(int size_)
+	public NeighborList<I, T, N> create(int size_)
 	{
-		return new NeighborList<TID, T, TN>(size_, _comparator);
+		return new NeighborList<I, T, N>(size_, _comparator);
 	}
 
 }

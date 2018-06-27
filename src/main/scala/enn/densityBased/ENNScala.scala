@@ -1,30 +1,39 @@
+/*
+ * Copyright (C) 2011-2012 the original author or authors.
+ * See the LICENCE.txt file distributed with this work for additional
+ * information regarding copyright ownership.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package enn.densityBased
 
-import org.apache.spark.SparkContext._
-import knn.graph.INode
-import knn.graph.NeighborList
-import java.util.HashSet
+import java.util
+import java.util.{HashSet, Random}
 
-import org.apache.spark.rdd.RDD
-
-import scala.collection.JavaConversions._
-import org.apache.spark.api.java.function.PairFlatMapFunction
-import java.util.Random
-
-import scala.reflect.ClassTag
-import org.apache.spark.broadcast.Broadcast
-import org.apache.spark.SparkContext
-import knn.graph.NeighborListFactory
-import knn.graph.Neighbor
-import org.apache.spark.storage.StorageLevel
+import knn.graph.{INode, Neighbor, NeighborList, NeighborListFactory}
 import knn.metric.IMetric
+import org.apache.spark.SparkContext
+import org.apache.spark.broadcast.Broadcast
+import org.apache.spark.rdd.RDD
+import org.apache.spark.storage.StorageLevel
 import org.apache.spark.util.LongAccumulator
 
-/**
-  * @author alemare
-  */
-class ENNScala[TID: ClassTag, T: ClassTag, TN <: INode[TID, T] : ClassTag](@transient val sc: SparkContext,
-                                                                           val _metric: IMetric[TID, T, TN],
+import scala.collection.JavaConversions._
+import scala.reflect.ClassTag
+
+class ENNScala[I: ClassTag, T: ClassTag, N <: INode[I, T] : ClassTag](@transient val sc: SparkContext,
+                                                                           val _metric: IMetric[I, T, N],
                                                                            val _config: ENNConfig)
   extends Serializable {
   val DEFAULT_STORAGE_LEVEL = StorageLevel.MEMORY_AND_DISK
@@ -34,22 +43,21 @@ class ENNScala[TID: ClassTag, T: ClassTag, TN <: INode[TID, T] : ClassTag](@tran
     * send to each neighbor the list of all the neighbors paired with the similarities
     */
   def neighborSimilarityInnerLoop(comparison: LongAccumulator,
-                                  node: TN,
-                                  list: Iterable[TN],
-                                  nodeManager: ENNNodeManager[TID, T, TN],
-                                  nodeExcluded: Broadcast[Set[TID]],
-                                  neighborListFactory: NeighborListFactory[TID, T, TN],
-                                  self: Boolean): NeighborList[TID, T, TN] = {
+                                  node: N,
+                                  list: Iterable[N],
+                                  nodeManager: ENNNodeManager[I, T, N],
+                                  nodeExcluded: Broadcast[Set[I]],
+                                  neighborListFactory: NeighborListFactory[I, T, N]): NeighborList[I, T, N] = {
     val nl = neighborListFactory.create(_config.k);
 
     val tValue = nodeManager.getNodeValue(node)
     var internalComparison = 0
 
     if (tValue.isDefined && !nodeExcluded.value.contains(node.getId)) {
-      list.map(u => {
+      list.foreach(u => {
         val uValue = nodeManager.getNodeValue(u)
         if (u != node && uValue.isDefined && !nodeExcluded.value.contains(u.getId)) {
-          nl.add(new Neighbor[TID, T, TN](u, _metric.compare(uValue.get, tValue.get)))
+          nl.addNoContains(new Neighbor[I, T, N](u, _metric.compare(uValue.get, tValue.get)))
           internalComparison += 1
         }
       })
@@ -60,37 +68,37 @@ class ENNScala[TID: ClassTag, T: ClassTag, TN <: INode[TID, T] : ClassTag](@tran
   }
 
   def neighborSimilarityLoopAll(comparison: LongAccumulator,
-                                nodes: Set[TN],
-                                nodeManager: ENNNodeManager[TID, T, TN],
-                                nodeExcluded: Broadcast[Set[TID]],
-                                neighborListFactory: NeighborListFactory[TID, T, TN]): Iterable[(TN, NeighborList[TID, T, TN])] = {
-    val toReturn: Map[TID, (TN, NeighborList[TID, T, TN])] = nodes.map(t => (t.getId, (t, neighborListFactory.create(_config.k)))).toMap
+                                nodes: Set[N],
+                                nodeManager: ENNNodeManager[I, T, N],
+                                nodeExcluded: Broadcast[Set[I]],
+                                neighborListFactory: NeighborListFactory[I, T, N]): Iterable[(N, NeighborList[I, T, N])] = {
+    val toReturn: Map[I, (N, NeighborList[I, T, N])] = nodes.map(t => (t.getId, (t, neighborListFactory.create(_config.k)))).toMap
     var internalComparison = 0
 
-    nodes.map(t => {
-      val tValue = nodeManager.getNodeValue(t)
+    nodes.foreach{case(node) => {
+      val nodeValue = nodeManager.getNodeValue(node)
 
-      if (tValue.isDefined && !nodeExcluded.value.contains(t.getId)) {
-        nodes.map(u => {
-          if (u.getId.hashCode < t.getId.hashCode && !nodeExcluded.value.contains(u.getId)) {
-            val uValue = nodeManager.getNodeValue(u)
-            if (uValue.isDefined) {
-              val r = _metric.compare(uValue.get, tValue.get)
+      if (nodeValue.isDefined && !nodeExcluded.value.contains(node.getId)) {
+        nodes.foreach{case(neighbor) => {
+          if (neighbor.getId.hashCode < node.getId.hashCode && !nodeExcluded.value.contains(neighbor.getId)) {
+            val neighborValue = nodeManager.getNodeValue(neighbor)
+            if (neighborValue.isDefined) {
+              val similarity = _metric.compare(neighborValue.get, nodeValue.get)
               internalComparison += 1
-              toReturn(u.getId)._2.add(new Neighbor[TID, T, TN](t, r))
-              toReturn(t.getId)._2.add(new Neighbor[TID, T, TN](u, r))
+              toReturn(neighbor.getId)._2.addNoContains(new Neighbor[I, T, N](node, similarity))
+              toReturn(node.getId)._2.addNoContains(new Neighbor[I, T, N](neighbor, similarity))
             }
           }
-        })
+        }}
       }
 
-    })
+    }}
 
     comparison.add(internalComparison)
-    toReturn.map(t => (t._2._1, t._2._2)).toIterable
+    toReturn.map(t => (t._2._1, t._2._2))
   }
 
-  def samplingNodes(self_ : TN, list_ : Iterable[TN]) = {
+  private def samplingNodes(self_ : N, list_ : Iterable[N]) = {
     if (_config.sampling > 0) {
       list_.toSet.take((_config.k * _config.sampling) - 1) ++ Set(self_)
     }
@@ -99,35 +107,31 @@ class ENNScala[TID: ClassTag, T: ClassTag, TN <: INode[TID, T] : ClassTag](@tran
     }
   }
 
-  def computeGraph(graphInput_ : RDD[(TN, NeighborList[TID, T, TN])],
-                   eNNgraphInput_ : RDD[(TN, HashSet[TID])],
+  def computeGraph(graphInput_ : RDD[(N, NeighborList[I, T, N])],
+                   eNNgraphInput_ : RDD[(N, HashSet[I])],
                    printer_ : ENNPrintToFile,
                    iterSum_ : Int,
-                   nodeManager_ : ENNNodeManager[TID, T, TN]): RDD[(TN, HashSet[TID])] = {
+                   nodeManager_ : ENNNodeManager[I, T, N]): RDD[(N, HashSet[I])] = {
     val nodeManagerBC = sc.broadcast(nodeManager_)
     val neighborListFactoryBC = sc.broadcast(_metric.getNeighborListFactory())
 
     var graphENN = eNNgraphInput_
-    var graphKNN: RDD[(TN, NeighborList[TID, T, TN])] = graphInput_
+    var graphKNN: RDD[(N, NeighborList[I, T, N])] = graphInput_
 
     val totalNodes = graphInput_.count
 
-    var nodeExcluded = sc.broadcast(Set[TID]())
+    var nodeExcluded = sc.broadcast(Set[I]())
 
     var iteration = 1
     var earlyTermination = false
 
     val comparison = sc.longAccumulator("comparison")
 
-    // TODO this must be handled by a config variable
-    //        val pruning = (_config.k + (Math.max(_config.k, _config.kMax) - _config.k) * 2)
-
-    def computingNode(id_ : TID, iterationNumber_ : Int, splitComputationNumber_ : Int): Boolean = {
+    def computingNode(id_ : I, iterationNumber_ : Int, splitComputationNumber_ : Int): Boolean = {
       id_.hashCode() % splitComputationNumber_ == iterationNumber_ % splitComputationNumber_
     }
 
-    while (iteration <= _config.maxIterations && !earlyTermination) //        for ( iteration <- 1 to _config.maxIterations )
-    {
+    while (iteration <= _config.maxIterations && !earlyTermination) {
       val timeBegin = System.currentTimeMillis()
       val iterationNumber = iteration + iterSum_;
 
@@ -145,42 +149,36 @@ class ENNScala[TID: ClassTag, T: ClassTag, TN <: INode[TID, T] : ClassTag](@tran
       val graphKNNiterationStart = graphKNN
 
       val exploded_graph =
-        graphKNN.flatMap(tuple => tuple._2
-          .flatMap(t => {
-            if (computingNode(t.node.getId, iterationNumber, splitComputationNumber)) {
-              Array((tuple._1, t.node), (t.node, tuple._1))
+        graphKNN.flatMap { case (node, neighborsList) =>
+          neighborsList.flatMap { case (neighbor) => {
+            if (computingNode(neighbor.node.getId, iterationNumber, splitComputationNumber)) {
+              Array((node, neighbor.node), (neighbor.node, node))
+            } else {
+              Array((node, neighbor.node))
             }
-            else {
-              Array((tuple._1, t.node))
-            }
-          })).groupByKey // i obtained equals performance
-      //.reduceByKey((a,b) => a++b)
+          }
+          }
+        }.groupByKey // i obtained equals performance
 
       /**
         * some statistics for plotting
         */
       val computingNodes = if (_config.performance) 0 else exploded_graph.filter(tuple => tuple._1.getId.hashCode() % splitComputationNumber == iterationNumber % splitComputationNumber).count
 
-      graphKNN = exploded_graph.flatMap(tuple => {
+      graphKNN = exploded_graph.flatMap { case (node, neighbors) => {
         /**
           * alternating computation
           * in iteration t only the nodes having id % t equals to 0 perform all pairs similarity of the neighbors
           */
-        if (computingNode(tuple._1.getId, iterationNumber, splitComputationNumber)) {
-          val nodes = samplingNodes(tuple._1, tuple._2)
-
-          if (_config.knnMetricDoubleCalculation) {
-            nodes.map(t => (t, neighborSimilarityInnerLoop(comparison, t, nodes, nodeManagerBC.value, nodeExcluded, neighborListFactoryBC.value, t.getId == tuple._1.getId)))
-          }
-          else {
-            neighborSimilarityLoopAll(comparison, nodes, nodeManagerBC.value, nodeExcluded, neighborListFactoryBC.value)
-          }
-
+        if (computingNode(node.getId, iterationNumber, splitComputationNumber)) {
+          val nodes = samplingNodes(node, neighbors)
+          neighborSimilarityLoopAll(comparison, nodes, nodeManagerBC.value, nodeExcluded, neighborListFactoryBC.value)
         }
         else {
-          Array[(TN, NeighborList[TID, T, TN])]((tuple._1, neighborSimilarityInnerLoop(comparison, tuple._1, tuple._2, nodeManagerBC.value, nodeExcluded, neighborListFactoryBC.value, true)))
+          Array[(N, NeighborList[I, T, N])]((node, neighborSimilarityInnerLoop(comparison, node, neighbors, nodeManagerBC.value, nodeExcluded, neighborListFactoryBC.value)))
         }
-      }).filter(t => !t._2.isEmpty())
+      }
+      }.filter(t => !t._2.isEmpty())
 
       /**
         * for each node we gather the better kMax neighbors (in reduceByKey)
@@ -188,7 +186,7 @@ class ENNScala[TID: ClassTag, T: ClassTag, TN <: INode[TID, T] : ClassTag](@tran
         * 1) the best k neighbors -> for the KNN graph
         * 2) all the neighbors valid for ENN -> for the ENN graph
         */
-      val graphBeforeFilter: RDD[(TN, (NeighborList[TID, T, TN], HashSet[TID]))] = graphKNN.reduceByKey((a, b) => {
+      val graphBeforeFilter: RDD[(N, (NeighborList[I, T, N], Iterable[I]))] = graphKNN.reduceByKey((a, b) => {
         val neighborKNN = neighborListFactoryBC.value.create(Math.max(_config.k, _config.kMax))
 
         neighborKNN.addAll(a)
@@ -198,23 +196,16 @@ class ENNScala[TID: ClassTag, T: ClassTag, TN <: INode[TID, T] : ClassTag](@tran
       }).map(t => (t._1, ( {
         t._2.convertWithSize(_config.k)
       }, {
-        val neighborENN = new HashSet[TID]();
-
-        t._2.foreach(u => {
-          if (_metric.isValid(u, _config.epsilon)) {
-            neighborENN.add(u.node.getId());
-          }
-        })
-
-        neighborENN
+        t._2.flatMap(p => if (_metric.isValid(p, _config.epsilon)) Some(p.node.getId) else None) //.toSet
       })))
 
       /**
         * for what concern the KNN construction we keep only the top k neighbors and we discard the ENN neighbors
         */
       graphBeforeFilter.setName("GRAPH-BEFORE-FILTER: " + iteration)
-      graphBeforeFilter.persist(DEFAULT_STORAGE_LEVEL) //.first
-    val previousGraphKNN = graphKNN
+      graphBeforeFilter.persist(DEFAULT_STORAGE_LEVEL)
+
+      val previousGraphKNN = graphKNN
       graphKNN = graphBeforeFilter.map(t => (t._1, t._2._1))
 
       /**
@@ -224,7 +215,7 @@ class ENNScala[TID: ClassTag, T: ClassTag, TN <: INode[TID, T] : ClassTag](@tran
         */
       val previousGraphENN = graphENN
 
-      val graphENNPlusExclusion: RDD[(TN, (HashSet[TID], Boolean))] =
+      val graphENNPlusExclusion: RDD[(N, (HashSet[I], Boolean))] =
         graphENN.leftOuterJoin(graphBeforeFilter.map(t => (t._1, t._2._2))).map(arg => {
           if (arg._2._1.size() >= _config.kMax) {
             (arg._1, (arg._2._1, arg._2._2.isDefined))
@@ -243,14 +234,11 @@ class ENNScala[TID: ClassTag, T: ClassTag, TN <: INode[TID, T] : ClassTag](@tran
           }
         })
 
-      if (!_config.instrumented) {
-        nodeExcluded = sc.broadcast(graphENNPlusExclusion.filter(t => t._2._2).map(t => t._1.getId).collect().toSet)
-      }
+      nodeExcluded = sc.broadcast(graphENNPlusExclusion.filter(t => t._2._2).map(t => t._1.getId).collect().toSet)
 
       val nodeExludedNumber = nodeExcluded.value.size
 
       graphENN = graphENNPlusExclusion.map(t => (t._1, t._2._1)).persist(DEFAULT_STORAGE_LEVEL)
-      //      val debugCheck = graphENN.collect()
       graphENN.setName("GRAPH-ENN: " + iteration)
       graphENN.count()
       previousGraphENN.unpersist()
@@ -264,11 +252,9 @@ class ENNScala[TID: ClassTag, T: ClassTag, TN <: INode[TID, T] : ClassTag](@tran
       val timeEnd = System.currentTimeMillis()
 
       if (!_config.performance) {
-        printer_.printENN[TID, T, TN](graphENN, iterationNumber);
+        printer_.printENN[I, T, N](graphENN, iterationNumber)
       }
-      if (_config.instrumented) {
-        printer_.printKNNDistribution(iteration, graphKNN)
-      }
+      //        printer_.printKNNDistribution(iteration, graphKNN)
 
       printer_.printTime(iterationNumber, timeEnd - timeBegin, activeNodes, computingNodes, nodeExludedNumber, comparison.value)
 
@@ -279,77 +265,12 @@ class ENNScala[TID: ClassTag, T: ClassTag, TN <: INode[TID, T] : ClassTag](@tran
       iteration = iteration + 1
     }
 
-    if (_config.instrumented) {
-      printer_.printENNDistribution[TID, T, TN](iteration, graphENN)
-    }
+    //      printer_.printENNDistribution[TID, T, TN](iteration, graphENN)
 
     graphENN
   }
 
-  def initializeENN(nodes_ : RDD[TN]) = {
-    nodes_.map(t => (t, new HashSet[TID]()))
-  }
-
-  def initializeAndComputeGraph(nodes_ : RDD[TN], nodeManager: ENNNodeManager[TID, T, TN], partitionNumber_ : Int, printer_ : ENNPrintToFile): RDD[(TN, HashSet[TID])] = {
-    val eNNgraph: RDD[(TN, HashSet[TID])] = initializeENN(nodes_)
-
-    initializeAndComputeGraphWithENN(nodes_, nodeManager, partitionNumber_, printer_, 0, eNNgraph);
-  }
-
-  def initializeAndComputeGraphWithENN(nodes_ : RDD[TN],
-                                       nodeManager: ENNNodeManager[TID, T, TN],
-                                       partitionNumber_ : Int,
-                                       printer_ : ENNPrintToFile,
-                                       iterSum_ : Int,
-                                       eNNgraph_ : RDD[(TN, HashSet[TID])]): RDD[(TN, HashSet[TID])] = {
-    /*
- * each node is sent to 10 random "buckets"
- */
-    val randomized: RDD[(Int, TN)] = nodes_.flatMap(n => {
-      /*
-* rand must be initialized here
-* if put outside the algorithm works worst (!!!???)
-*/
-      val rand = new Random();
-      (1 to 10) map (_ => (rand.nextInt(partitionNumber_), n))
-    })
-
-    /*
- * inside each "bucket", each node take k random neighbors
- */
-    val random_nl: RDD[(TN, NeighborList[TID, T, TN])] = randomized.groupByKey.flatMap(tuple => {
-      /*
-       * rand must be initialized here
-       * if put outside the algorithm works worst (!!!???)
-       */
-      val rand = new Random();
-      val nodes = tuple._2.toArray
-
-      tuple._2.map(t => {
-        val nnl = new NeighborList[TID, T, TN](_config.k);
-
-        (1 to _config.k) map (_ => nnl.add((new Neighbor[TID, T, TN](nodes(rand.nextInt(nodes.size)), Double.MaxValue))))
-
-        (t, nnl)
-      })
-    })
-
-    /*
- * each node merge the data from all the 10 different buckets and we have the KNN to start the computation randomly connected
- */
-    val graph: RDD[(TN, NeighborList[TID, T, TN])] = random_nl.reduceByKey((a, b) => {
-      val nnl = new NeighborList[TID, T, TN](_config.k);
-      nnl.addAll(a);
-      nnl.addAll(b);
-
-      nnl
-    })
-
-    graph.setName("STARTING KNN GRAPH")
-    graph.persist(DEFAULT_STORAGE_LEVEL).count();
-    randomized.unpersist();
-    random_nl.unpersist();
-
-    computeGraph(graph, eNNgraph_, printer_, iterSum_, nodeManager);
+  def initializeENN(nodes_ : RDD[N]) : RDD[(N, util.HashSet[I])] = {
+    nodes_.map(t => (t, new HashSet[I]()))
   }
 }

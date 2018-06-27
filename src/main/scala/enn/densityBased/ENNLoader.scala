@@ -1,33 +1,38 @@
+/*
+ * Copyright (C) 2011-2012 the original author or authors.
+ * See the LICENCE.txt file distributed with this work for additional
+ * information regarding copyright ownership.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package enn.densityBased
 
-import java.util.HashSet
-
-import scala.collection.JavaConversions._
-import scala.reflect.ClassTag
-import org.apache.spark.broadcast.Broadcast
-import org.apache.spark.rdd.RDD
 import dataset.DatasetLoad
 import knn.graph.INode
-import knn.graph.impl.NodeGeneric
-import knn.graph.impl.NodeSimple
+import knn.graph.impl.{NodeGeneric, NodeSimple}
 import knn.metric.IMetric
 import knn.metric.impl._
-import knn.util.Point2D
-import knn.util.PointND
-import knn.util.PointNDBoolean
-import knn.util.PointNDSparse
-import util.CCProperties
-import util.CCPropertiesImmutable
-import util.CCUtil
+import knn.util.{Point2D, PointND, PointNDBoolean, PointNDSparse}
+import org.apache.spark.SparkContext
 
-/**
-  * @author alemare
-  */
+import scala.reflect.ClassTag
+
 class ENNLoader(args_ : Array[String]) extends Serializable {
   val config = new ENNConfig(args_)
 
   @transient
-  val sc = config.util.getSparkContext()
+  val sc: SparkContext = config.util.getSparkContext()
   sc.setLogLevel("ERROR")
   val printer = new ENNPrintToFile(config)
 
@@ -60,7 +65,7 @@ class ENNLoader(args_ : Array[String]) extends Serializable {
         val metric = new EuclidianDistance2D[Long, NodeGeneric[Long, Point2D]]
         //                    val nodeManager = new ENNNodeManagerValueOnMapLong[Point2D](sc)
         val nodeManager = new ENNNodeManagerValueOnNodeLong[Point2D](sc)
-        nodeManager.init(vertexRDD.map(t => (t._1.toLong, t._2)))
+        //        nodeManager.init(vertexRDD.map(t => (t._1.toLong, t._2)))
 
         val ennRunner = getENNRunnerLongID[Point2D, NodeGeneric[Long, Point2D]](nodeManager)
 
@@ -191,12 +196,12 @@ class ENNLoader(args_ : Array[String]) extends Serializable {
     }
   }
 
-  def stop = {
+  def stop : Unit = {
     sc.stop
   }
 
-  def getENNRunnerLongID[T: ClassTag, TN <: INode[Long, T] : ClassTag](nodeManager: ENNNodeManager[Long, T, TN]) = {
-    new ENNRunnerLongID[T, TN](printer, config, nodeManager, sc)
+  def getENNRunnerLongID[T: ClassTag, N <: INode[Long, T] : ClassTag](nodeManager: ENNNodeManager[Long, T, N]) : ENNRunnerLongID[T, N] = {
+    new ENNRunnerLongID[T, N](printer, config, nodeManager, sc)
   }
 
 }

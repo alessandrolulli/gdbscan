@@ -1,92 +1,67 @@
+/*
+ * Copyright (C) 2011-2012 the original author or authors.
+ * See the LICENCE.txt file distributed with this work for additional
+ * information regarding copyright ownership.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package enn.densityBased
 
 import java.util.Random
 
-import scala.reflect.ClassTag
-
+import knn.graph.{INode, NeighborList}
+import knn.metric.IMetric
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
 import org.apache.spark.storage.StorageLevel
 
-import knn.graph.INode
-import knn.graph.NeighborList
-import knn.metric.IMetric
+import scala.reflect.ClassTag
 
-/**
- * @author alemare
- */
-class ENNRunnerLongID[T : ClassTag, TN <: INode[Long, T] : ClassTag] (_printer : ENNPrintToFile,
-                                                                      _config : ENNConfig,
-                                                                      _nodeManager : ENNNodeManager[Long, T, TN],
-                                                                      @transient val _sc : SparkContext) extends Serializable
-{
-    val DEFAULT_STORAGE_LEVEL = StorageLevel.MEMORY_AND_DISK
+class ENNRunnerLongID[T: ClassTag, N <: INode[Long, T] : ClassTag](_printer: ENNPrintToFile,
+                                                                   _config: ENNConfig,
+                                                                   _nodeManager: ENNNodeManager[Long, T, N],
+                                                                   @transient val _sc: SparkContext) extends Serializable {
+  val DEFAULT_STORAGE_LEVEL = StorageLevel.MEMORY_AND_DISK
 
-    def run(metric : IMetric[Long, T, TN], vertexRDD : RDD[TN]) =
-    {
-        val enn = new ENNScala[Long, T, TN]( _sc  ,
-                metric ,
-                _config)
+  def run(metric: IMetric[Long, T, N], vertexRDD: RDD[N]): Unit = {
+    vertexRDD.persist(DEFAULT_STORAGE_LEVEL)
+    val enn = new ENNScala[Long, T, N](_sc,
+      metric,
+      _config)
 
 
-        val initKNN = initializeKNN(metric, vertexRDD, _nodeManager).persist(DEFAULT_STORAGE_LEVEL)
-        val initENN = enn.initializeENN(vertexRDD).persist(DEFAULT_STORAGE_LEVEL)
+    val initKNN = initializeKNN(metric, vertexRDD, _nodeManager).persist(DEFAULT_STORAGE_LEVEL)
+    val initENN = enn.initializeENN(vertexRDD).persist(DEFAULT_STORAGE_LEVEL)
 
-        initKNN.setName("STARTING KNN GRAPH")
-        initENN.setName("STARTING ENN GRAPH")
+    initKNN.setName("STARTING KNN GRAPH")
+    initENN.setName("STARTING ENN GRAPH")
 
-        initKNN.count
-        initENN.count
-        vertexRDD.unpersist()
+    initKNN.count
+    initENN.count
+    vertexRDD.unpersist()
 
-        val graph = enn.computeGraph(initKNN,
-                                     initENN,
-                                     _printer,
-                                     0,
-                                     _nodeManager)
+    val graph = enn.computeGraph(initKNN,
+      initENN,
+      _printer,
+      0,
+      _nodeManager)
 
-        _printer.printENN[Long, T,TN](graph, -1, true)
-    }
+    _printer.printENN[Long, T, N](graph, -1, true)
+    graph.unpersist()
+  }
 
-    def initializeKNN(metric : IMetric[Long, T, TN], vertexRDD : RDD[TN], nodeManager : ENNNodeManager[Long, T, TN]): RDD[(TN, NeighborList[Long, T, TN])] =
-    {
-        nodeManager.initKNN(vertexRDD, metric, _config)
-
-//        val count = vertexRDD.count
-//        val neighborListFactory = metric.getNeighborListFactory
-//
-//        vertexRDD.map(t => (t,
-//            {
-//               val rand = new Random
-//               val neighborKNN = neighborListFactory.create(_config.k)
-//               (1 to _config.k) map (_  =>
-//                       {
-//
-//                           val id = nextLong(rand, count)
-//                           val value = nodeManager.getNodeValue(id)
-//
-//                           if(value.isDefined)
-//                               neighborKNN.add(new Neighbor[Long, T, TN](
-//                                       nodeManager.createNode(id, value.get)
-//                                       , Double.MaxValue))
-//                       }
-//               )
-//
-//               neighborKNN
-//            }))
-    }
-
-    def nextLong( rng : Random, n : Long ) : Long = {
-        // error checking and 2^x checking removed for simplicity.
-        var bits : Long = 0L
-        var value : Long = 0L
-        do {
-            bits = ( rng.nextLong() << 1 ) >>> 1;
-            value = bits % n;
-        } while ( bits - value + ( n - 1 ) < 0L );
-
-        if(value >= n) nextLong(rng, n)
-        else value;
-}
-
+  def initializeKNN(metric: IMetric[Long, T, N], vertexRDD: RDD[N], nodeManager: ENNNodeManager[Long, T, N]): RDD[(N, NeighborList[Long, T, N])] = {
+    nodeManager.initKNN(vertexRDD, metric, _config)
+  }
 }
