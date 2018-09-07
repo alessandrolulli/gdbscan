@@ -1,0 +1,8 @@
+# set in config the following variables
+# ennType Point2D
+# columnDataA 1
+# columnDataB 2
+# TSV: id  x y
+0 0 0
+1 15  32
+2 8 23
