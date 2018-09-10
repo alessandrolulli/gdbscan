@@ -37,34 +37,39 @@ import scala.util.Random
 object ClusteringInternalEvaluation {
 
   def separationLoop[TID: ClassTag, T: ClassTag, TN <: INode[TID, T] : ClassTag](
-                                                                              similarity: IMetric[TID, T, TN],
-                                                                              rddCC: RDD[(TID, TID)],
-                                                                              rddSubject: RDD[(TID, TN)],
-                                                                              sc: SparkContext): (Double, Double) = {
-    val rddJoined = rddCC.join(rddSubject) // id , (seed, subject)
+                                                                                  similarity: IMetric[TID, T, TN],
+                                                                                  rddCC: RDD[(TID, TID)],
+                                                                                  rddSubject: RDD[(TID, TN)],
+                                                                                  sc: SparkContext): (Double, Double) = {
+    val allData = rddCC.join(rddSubject) // (seed, subject)
       .map(t => (t._2._1, t._2._2))
-      .groupByKey
-      .map(t => (Random.shuffle(t._2.toList).head, t._2.size)).cache
-    val size = rddJoined.count
+      .takeSample(false, 10000, System.currentTimeMillis())
 
-    val sampleSize = Math.min(1.0, 2000.0 / size)
-    val forBruteForce = rddJoined.map(t => t._1).sample(false, sampleSize, System.currentTimeMillis()).collect.toList
 
-    val brute = new BruteForce[TID, T, TN]();
-    brute.setK(5);
-    brute.setSimilarity(similarity);
+    var sum = 0d
+    var number = 0
+    val random = new Random
 
-    val exactGraph = brute.computeGraph(forBruteForce);
+    var count = 0
+    while (count < allData.length - 1) {
+      var countInner = count + 1
+      while (countInner < allData.length) {
 
-    val separationCalculation = exactGraph.map(t => t._2.getMaxSimilarity().similarity)
-    val separation = separationCalculation.sum / separationCalculation.size
+        if (!allData(count)._1.equals(allData(countInner)._1)) {
+          if (random.nextInt(100) == 0) {
+            number += 1
+            sum += similarity.similarity(allData(count)._2.getValue, allData(countInner)._2.getValue)
+          }
+        }
 
-    val weighted = rddJoined.map(t => (t._1.getId, t._2))
-      .join(sc.parallelize(exactGraph.map(t => (t._1.getId, t._2.getMaxSimilarity().similarity)).toSeq))
-      .map(t => (t._2._1, t._2._2))
-      .reduce((a, b) => (a._1 + b._1, (a._1 * a._2 + b._1 * b._2)/(a._1 + b._1)))
+        countInner += 1
+      }
 
-    (separation, weighted._2)
+      count += 1
+    }
+    println(number)
+
+    (sum / number, 0d)
   }
 
   def separation[TID: ClassTag, T: ClassTag, TN <: INode[TID, T] : ClassTag](
@@ -72,10 +77,12 @@ object ClusteringInternalEvaluation {
                                                                               rddCC: RDD[(TID, TID)],
                                                                               rddSubject: RDD[(TID, TN)],
                                                                               sc: SparkContext): (Double, Double) = {
-    val repetition = 10
-    val result = for ( i <- 1 to repetition)  yield separationLoop(similarity, rddCC, rddSubject, sc)
+    //    val asp = rddCC.join(rddSubject) // (id, (clusterId, subject)
 
-    val toReturn = result.reduce((a,b) => (a._1 + b._1, a._2 + b._2))
+    val repetition = 10
+    val result = for (i <- 1 to repetition) yield separationLoop(similarity, rddCC, rddSubject, sc)
+
+    val toReturn = result.reduce((a, b) => (a._1 + b._1, a._2 + b._2))
 
     (toReturn._1 / repetition, toReturn._2 / repetition)
   }
@@ -93,46 +100,43 @@ object ClusteringInternalEvaluation {
     useIt.first
 
     val random = new Random
-    var clusterIdSetSample = clusterIdSet
-    if (clusterIdSetSample.size > 300) {
-      clusterIdSetSample = (1 until 300).map {
-        ttt => clusterIdSet(random.nextInt(clusterIdSet.size))
-      }.toArray
-    }
 
-    val asp3 = clusterIdSetSample.map(t => useIt.filter { case (key, value) => key == t }.values)
+    val asp3 = clusterIdSet.map(t => useIt.filter { case (key, value) => key == t }.values)
     val asp3size = asp3.size
 
-    val kkk = sc.parallelize(asp3.map(z => {
+    val kkk = sc.parallelize(asp3.map { case (z) => {
 
-      val groupSubject = z.map(u => u._3)
+      val allData = z.map(u => u._3).takeSample(false, 100000, System.currentTimeMillis())
       val clusterId = z.map(u => u._1).first
+      val random = new Random
 
-      var sampleSize = 0.01
-      val size = groupSubject.count
+      var sum = 0d
+      var number = 0
 
-      if (size < 2000) sampleSize = 1
-      else sampleSize = 2000.0 / size
+      var count = 0
+      while (count < allData.length - 1) {
+        var countInner = count + 1
+        while (countInner < allData.length) {
+          if (random.nextInt(100) == 0) {
+            number += 1
+            sum += similarity.similarity(allData(count).getValue, allData(countInner).getValue)
+          }
 
-      val toCheck = groupSubject.sample(false, sampleSize, System.currentTimeMillis()).collect
-      val sizeCheck = toCheck.size
+          countInner += 1
+        }
 
-      val brute = new BruteForce[TID, T, TN]();
-      brute.setK(5);
-      brute.setSimilarity(similarity);
-      val exact_graph = brute.computeGraphAndAvgSimilarity(toCheck.toList.asJava);
+        count += 1
+      }
 
-      (clusterId, exact_graph._2, sizeCheck)
-    }), 64)
+      (clusterId, sum, number)
+    }
+    }, 64).filter(t => t._3 > 10).cache()
 
-    val compactnessSum = kkk.map(t => t._2).reduce(_ + _)
-    val compactnessCount = kkk.count
-    val compactness = compactnessSum / compactnessCount
+    val compactnessCount = kkk.map(t => t._3).reduce(_ + _).toDouble
 
-    // maybe it is not the best way to perform the weighted
-    val weighted = kkk.map(t => (t._3, t._2)).reduce((a, b) => (a._1 + b._1, (a._1 * a._2 + b._1 * b._2)/(a._1 + b._1)))
+    val compactness = kkk.map(t => (t._2 / t._3) * (t._3 / compactnessCount)).reduce(_+_)
 
-    (compactness, weighted._2)
+    (compactness, 0)
   }
 
   def computeInternalEvaluation[TID: ClassTag, T: ClassTag, TN <: INode[TID, T] : ClassTag](similarity: IMetric[TID, T, TN],
@@ -149,7 +153,7 @@ object ClusteringInternalEvaluation {
   def main(args_ : Array[String], sc: SparkContext): Unit = {
     // super ugly code! make it better!
     val config = new ENNConfig(args_, "CLUSTERING_INTERNAL_EVALUATION")
-//    val sc = config.util.getSparkContext();
+    //    val sc = config.util.getSparkContext();
 
     val file = sc.textFile(config.property.dataset, config.property.sparkPartition).cache
     val cluster = DatasetLoad.loadCluster(sc.textFile(config.property.outputFile + "_CLUSTERING", config.property.sparkPartition)).cache
@@ -161,7 +165,7 @@ object ClusteringInternalEvaluation {
     val clusterMaxSize = clusterInfo.map(t => t._2).max
 
     // dataset, epsilon, core, sizeData, sizeDataClustered, clusterNumber, clusterMaxSize, separation, separationWeight, compactness, compactnessWeight
-    def printOutput(separationValue : (Double, Double), compactnessValue : (Double, Double)) = {
+    def printOutput(separationValue: (Double, Double), compactnessValue: (Double, Double)) = {
       config.util.io.printData("internalEvaluation.txt",
         config.property.dataset,
         config.epsilon.toString,
@@ -225,6 +229,6 @@ object ClusteringInternalEvaluation {
       }
     }
 
-    sc.stop
+    //    sc.stop
   }
 }

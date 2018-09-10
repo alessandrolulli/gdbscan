@@ -30,11 +30,12 @@ import org.apache.spark.storage.StorageLevel
 import org.apache.spark.util.LongAccumulator
 
 import scala.collection.JavaConversions._
+import scala.collection.mutable.ListBuffer
 import scala.reflect.ClassTag
 
 class ENNScala[I: ClassTag, T: ClassTag, N <: INode[I, T] : ClassTag](@transient val sc: SparkContext,
-                                                                           val _metric: IMetric[I, T, N],
-                                                                           val _config: ENNConfig)
+                                                                      val _metric: IMetric[I, T, N],
+                                                                      val _config: ENNConfig)
   extends Serializable {
   val DEFAULT_STORAGE_LEVEL = StorageLevel.MEMORY_AND_DISK
 
@@ -75,11 +76,11 @@ class ENNScala[I: ClassTag, T: ClassTag, N <: INode[I, T] : ClassTag](@transient
     val toReturn: Map[I, (N, NeighborList[I, T, N])] = nodes.map(t => (t.getId, (t, neighborListFactory.create(_config.k)))).toMap
     var internalComparison = 0
 
-    nodes.foreach{case(node) => {
+    nodes.foreach { case (node) => {
       val nodeValue = nodeManager.getNodeValue(node)
 
       if (nodeValue.isDefined && !nodeExcluded.value.contains(node.getId)) {
-        nodes.foreach{case(neighbor) => {
+        nodes.foreach { case (neighbor) => {
           if (neighbor.getId.hashCode < node.getId.hashCode && !nodeExcluded.value.contains(neighbor.getId)) {
             val neighborValue = nodeManager.getNodeValue(neighbor)
             if (neighborValue.isDefined) {
@@ -89,13 +90,15 @@ class ENNScala[I: ClassTag, T: ClassTag, N <: INode[I, T] : ClassTag](@transient
               toReturn(node.getId)._2.addNoContains(new Neighbor[I, T, N](neighbor, similarity))
             }
           }
-        }}
+        }
+        }
       }
 
-    }}
+    }
+    }
 
     comparison.add(internalComparison)
-    toReturn.map(t => (t._2._1, t._2._2))
+    toReturn.flatMap(t => if (t._2._2.isEmpty) None else Some(t._2._1, t._2._2))
   }
 
   private def samplingNodes(self_ : N, list_ : Iterable[N]) = {
@@ -173,12 +176,13 @@ class ENNScala[I: ClassTag, T: ClassTag, N <: INode[I, T] : ClassTag](@transient
         if (computingNode(node.getId, iterationNumber, splitComputationNumber)) {
           val nodes = samplingNodes(node, neighbors)
           neighborSimilarityLoopAll(comparison, nodes, nodeManagerBC.value, nodeExcluded, neighborListFactoryBC.value)
-        }
-        else {
-          Array[(N, NeighborList[I, T, N])]((node, neighborSimilarityInnerLoop(comparison, node, neighbors, nodeManagerBC.value, nodeExcluded, neighborListFactoryBC.value)))
+        } else {
+          val result = neighborSimilarityInnerLoop(comparison, node, neighbors, nodeManagerBC.value, nodeExcluded, neighborListFactoryBC.value)
+          if (result.isEmpty) None else
+            Array[(N, NeighborList[I, T, N])]((node, result))
         }
       }
-      }.filter(t => !t._2.isEmpty())
+      }
 
       /**
         * for each node we gather the better kMax neighbors (in reduceByKey)
@@ -270,7 +274,7 @@ class ENNScala[I: ClassTag, T: ClassTag, N <: INode[I, T] : ClassTag](@transient
     graphENN
   }
 
-  def initializeENN(nodes_ : RDD[N]) : RDD[(N, util.HashSet[I])] = {
+  def initializeENN(nodes_ : RDD[N]): RDD[(N, util.HashSet[I])] = {
     nodes_.map(t => (t, new HashSet[I]()))
   }
 }

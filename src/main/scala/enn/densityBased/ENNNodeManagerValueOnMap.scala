@@ -28,15 +28,15 @@ import scala.reflect.ClassTag
 abstract class ENNNodeManagerValueOnMap[I: ClassTag, T: ClassTag]
 (@transient val sc: SparkContext)
   extends ENNNodeManager[I, T, NodeSimple[I, T]] with Serializable {
-  var values: scala.collection.Map[I, T] = Map[I, T]()
+  var values: Broadcast[scala.collection.Map[I, T]] = sc.broadcast(Map[I, T]())
 
   override def init(data: RDD[(I, T)]): Unit = {
-    values = data.collectAsMap()
+    values = sc.broadcast(data.collectAsMap())
   }
 
   override def getNodeValue(node: NodeSimple[I, T]): Option[T] = getNodeValue(node.getId)
 
-  override def getNodeValue(nodeId: I): Option[T] = values.get(nodeId)
+  override def getNodeValue(nodeId: I): Option[T] = values.value.get(nodeId)
 
   override def createNode(nodeId: I, nodeValue: T): NodeSimple[I, T] = {
     new NodeSimple(nodeId)

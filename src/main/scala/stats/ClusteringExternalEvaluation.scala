@@ -165,6 +165,6 @@ object ClusteringExternalEvaluation {
 
     printOutput(recallValue, deltaK)
 
-    sc.stop
+//    sc.stop
   }
 }

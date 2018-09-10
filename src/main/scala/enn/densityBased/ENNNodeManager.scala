@@ -52,4 +52,6 @@ abstract class ENNNodeManager[I: ClassTag, T: ClassTag, N <: INode[I, T] : Class
       value
     }
   }
+
+  def value = this
 }
