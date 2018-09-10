@@ -24,12 +24,12 @@ import java.util.PriorityQueue;
 /**
  * This class implements a bounded priority queue
  * A structure that always keeps the n 'largest' elements
- * 
- * @author tibo
+ *
  * @param <E>
+ * @author tibo
  */
 public class BoundedPriorityQueue<E> extends PriorityQueue<E> {
-    
+
 //    public static void main(String [] args) {
 //        BoundedPriorityQueue<Integer> q = new BoundedPriorityQueue(4, new Comparator<Integer>
 //        {
@@ -43,17 +43,18 @@ public class BoundedPriorityQueue<E> extends PriorityQueue<E> {
 //        
 //        System.out.println(q);
 //    }
-    
+
     /**
-	 * 
-	 */
-	private static final long serialVersionUID = -8789341157399903122L;
-	protected int CAPACITY = Integer.MAX_VALUE;
+     *
+     */
+    private static final long serialVersionUID = -8789341157399903122L;
+    protected int CAPACITY = Integer.MAX_VALUE;
     private final Comparator<E> _comparator;
-    
+
     /**
      * Create a bounded priority queue with given maximum capacity
-     * @param capacity 
+     *
+     * @param capacity
      */
     public BoundedPriorityQueue(int capacity, Comparator<E> comparator_) {
         super(capacity, comparator_);
@@ -68,50 +69,58 @@ public class BoundedPriorityQueue<E> extends PriorityQueue<E> {
         super(10, comparator_);
         _comparator = comparator_;
     }
-    
+
     /**
      * When the queue is full, adds the element if it is larger than the smallest
      * element already in the queue.
-     * 
+     * <p>
      * It the element is not comparable, throws a ClassCastException
-     * 
+     *
      * @param element
      * @return true if element was added
      */
     @Override
     public boolean add(E element) {
-        if (! (element instanceof java.lang.Comparable) ) {
-            throw new ClassCastException();
-        }
-        
-        if (this.contains(element)) {
+        try {
+            if (!(element instanceof java.lang.Comparable)) {
+                throw new ClassCastException();
+            }
+
+            if (this.contains(element)) {
+                return false;
+            }
+
+            if (this.size() < CAPACITY) {
+                return super.add(element);
+            }
+
+            if (_comparator.compare(element, peek()) > 0) {
+                this.poll();
+                return super.add(element);
+            }
+
             return false;
+        } catch (Exception e) {
+            System.out.println("Error on element: " + element);
+            throw e;
         }
-        
-        if (this.size() < CAPACITY) {
-            return super.add(element);
-        }
-        
-        if (_comparator.compare(element, peek()) > 0)
-        {
-            this.poll();
-            return super.add(element);
-        }
-        
-        return false;
     }
 
     public boolean addNoContains(E element) {
-        if (this.size() < CAPACITY) {
-            return super.add(element);
-        }
+        try {
+            if (this.size() < CAPACITY) {
+                return super.add(element);
+            }
 
-        if (_comparator.compare(element, peek()) > 0)
-        {
-            this.poll();
-            return super.add(element);
-        }
+            if (_comparator.compare(element, peek()) > 0) {
+                this.poll();
+                return super.add(element);
+            }
 
-        return false;
+            return false;
+        } catch (Exception e) {
+            System.out.println("Error on element: " + element);
+            throw e;
+        }
     }
 }
